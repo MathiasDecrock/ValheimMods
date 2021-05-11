@@ -439,13 +439,15 @@ namespace PlanBuild
                 {
                     ItemDrop.ItemData itemData = req.m_resItem.m_itemData.Clone();
                     //FIXME: There is a bug in Valheim where ItemDrop amounts are not synced correctly, dropping each resource as a separate stack as a workaround for now
-                    //int dropCount = Mathf.Min(currentCount, itemData.m_shared.m_maxStackSize);
-                    int dropCount = 1;
+                    int dropCount = Mathf.Min(currentCount, itemData.m_shared.m_maxStackSize);
                     itemData.m_stack = dropCount;
                     currentCount -= dropCount;
-                     
-                    Object.Instantiate(req.m_resItem.gameObject, base.transform.position + Vector3.up, Quaternion.identity)
-                        .GetComponent<ItemDrop>().m_itemData = itemData;
+                    
+                    req.m_resItem.gameObject.setActive(false);
+                    ItemDrop itemDrop = Object.Instantiate(req.m_resItem.gameObject, base.transform.position + Vector3.up, Quaternion.identity).GetComponent<ItemDrop>();
+                    itemDrop.m_itemData = itemData;
+                    req.m_resItem.gameObject.setActive(true);
+                    itemDrop.gameObject.SetActive(true);
                 }
             }
 
