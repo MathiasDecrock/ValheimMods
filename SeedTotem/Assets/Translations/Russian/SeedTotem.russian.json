@@ -4,6 +4,7 @@
 	"tutorial_seed_totem_label": "Хугин: Тотем семян",
 	"tutorial_seed_totem_topic": "Вы построили тотем семени",
 	"tutorial_seed_totem_text": "<color=yellow>Тотем семян</color> садить имеющейся семена, в области вокруг него.\nПопытайтесь <color=yellow>ударить по нему</color> когда окружающие растения <color=yellow>полностью вырастут и будут готовы к сбору</color>.",
+	"message_seed_totem_hold": "Зажмите",
 	"message_seed_totem_seed_generic": "семена",
 	"message_seed_totem_seed_generic_plural": "семя",
 	"message_seed_totem_all": "все",
