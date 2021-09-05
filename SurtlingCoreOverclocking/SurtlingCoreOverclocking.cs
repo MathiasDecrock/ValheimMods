@@ -195,20 +195,20 @@ namespace SurtlingCoreOverclocking
             double efficiency = GetEfficiencyMultiplier(speedCoreCount, efficiencyCoreCount, productivityCoreCount);
 
             builder.Append(
-                 "[<color=yellow><b>1-8</b></color>] Add core\n" +
-                 "[Hold <color=yellow><b>$KEY_Use</b></color>] Remove cores\n");
+                 "[<color=yellow><b>1-8</b></color>] $message_overclock_core_add_core\n" +
+                 "[$message_overclock_core_hold <color=yellow><b>$KEY_Use</b></color>] $message_overclock_core_remove_cores\n");
 
             builder.Append("\n");
 
             int availableCoreSlots = GetTotalCoreSlotCount();
             int maxSlots = (m_defaultMaxOverclockCores.Value + m_maxAdditionalOverclockCores.Value);
-            builder.Append("<color=grey>Overclock slots: " + usedCoreSlots + "/" + availableCoreSlots + "" + ((availableCoreSlots == maxSlots) ? " [Max]" : "") + "</color>\n" +
-                           "<color=grey>Speed (" + speedCoreCount + "): </color><color=" + GetColor(speed) + ">" + GetPercentageString(speed) + "</color>\n");
+            builder.Append("<color=grey>$message_overclock_core_overclock_slots " + usedCoreSlots + "/" + availableCoreSlots + "" + ((availableCoreSlots == maxSlots) ? " [$message_overclock_core_max]" : "") + "</color>\n" +
+                           "<color=grey>$message_overclock_core_speed (" + speedCoreCount + "): </color><color=" + GetColor(speed) + ">" + GetPercentageString(speed) + "</color>\n");
             if (!IsKiln())
             {
-                builder.Append("<color=grey>Efficiency (" + efficiencyCoreCount + ") </color><color=" + GetColor(efficiency) + ">" + GetPercentageString(efficiency) + "</color><color=grey> -> Fuel usage: </color><color=" + GetColor(efficiency) + ">" + GetPercentageString(1.0 / efficiency) + "</color>\n");
+                builder.Append("<color=grey>$message_overclock_core_efficiency (" + efficiencyCoreCount + ") </color><color=" + GetColor(efficiency) + ">" + GetPercentageString(efficiency) + "</color><color=grey> -> $message_overclock_core_fuel_usage </color><color=" + GetColor(efficiency) + ">" + GetPercentageString(1.0 / efficiency) + "</color>\n");
             }
-            builder.Append("<color=grey>Productivity (" + productivityCoreCount + "): </color><color=" + GetColor(productivity) + ">" + GetPercentageString(productivity) + "</color>");
+            builder.Append("<color=grey>$message_overclock_core_productivity (" + productivityCoreCount + "): </color><color=" + GetColor(productivity) + ">" + GetPercentageString(productivity) + "</color>");
             m_hoverText = builder.ToString();
         }
 
