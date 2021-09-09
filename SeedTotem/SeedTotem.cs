@@ -14,7 +14,7 @@ namespace SeedTotem
     {
         public static ManualLogSource logger;
 
-        private const string m_name = "Seed totem";
+        private const string m_name = "$piece_seed_totem_name";
 
         private const string ZDO_queued = "queued";
         private const string ZDO_total = "total";
@@ -336,7 +336,7 @@ namespace SeedTotem
             }
 
             sb.Append("[<color=yellow><b>$KEY_Use</b></color>] $piece_smelter_add " + seedName + "\n");
-            sb.Append("[Hold <color=yellow><b>$KEY_Use</b></color>] $piece_smelter_add " + messageAll + " " + seedNamePlural + "\n");
+            sb.Append("[$message_seed_totem_hold <color=yellow><b>$KEY_Use</b></color>] $piece_smelter_add " + messageAll + " " + seedNamePlural + "\n");
             sb.Append("[<color=yellow><b>1-8</b></color>] $message_seed_totem_restrict");
 
             if (configShowQueue.Value)

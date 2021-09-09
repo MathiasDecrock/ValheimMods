@@ -4,6 +4,7 @@
 	"tutorial_seed_totem_label": "Hugin: Seed Totems",
 	"tutorial_seed_totem_topic": "You have built a Seed Totem",
 	"tutorial_seed_totem_text": "A <color=yellow>Seed Totem</color> will plant stored seeds in an area around it.\nTry <color=yellow>hitting it</color> when the surrounding plants are <color=yellow>fully grown and ready to pick</color>.",
+	"message_seed_totem_hold": "Hold",
 	"message_seed_totem_seed_generic": "seed",
 	"message_seed_totem_seed_generic_plural": "seeds",
 	"message_seed_totem_all": "all",
