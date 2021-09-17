@@ -279,7 +279,7 @@ namespace SurtlingCoreOverclocking
         private float m_holdRepeatInterval = 1f;
         private float m_lastUseTime;
 
-        public bool Interact(Humanoid user, bool hold)
+        public bool Interact(Humanoid user, bool hold, bool alt)
         {
             if (hold)
             {

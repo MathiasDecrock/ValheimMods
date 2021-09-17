@@ -338,7 +338,7 @@ namespace TransparentSails
                 if (Player.m_localPlayer == null)
                 {
                     return;
-                }
+                } 
                 GameObject sailObject = __instance.m_sailObject;
                 int instanceId = sailObject.GetInstanceID();
 
@@ -361,8 +361,7 @@ namespace TransparentSails
                     {
                         return false;
                     }
-                    break;
-
+                    break; 
                 case When.CurrentBoat:
                     if (!ship.IsPlayerInBoat(Player.m_localPlayer))
                     {

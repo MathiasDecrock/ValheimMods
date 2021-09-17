@@ -164,7 +164,7 @@ namespace SeedTotem
                     Pickable component = array[i].GetComponent<Pickable>();
                     if (component)
                     {
-                        component.Interact(player, false);
+                        component.Interact(player, false, false);
                     }
                 }
             }
@@ -470,7 +470,7 @@ namespace SeedTotem
         private float m_holdRepeatInterval = 1f;
         private float m_lastUseTime;
 
-        public bool Interact(Humanoid user, bool hold)
+        public bool Interact(Humanoid user, bool hold, bool alt)
         {
             if (Player.m_localPlayer.InPlaceMode())
             {
