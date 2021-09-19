@@ -1,1 +1,1 @@
-﻿Moved to __(https://github.com/sirskunkalot/PlanBuild)__
+﻿Moved to __https://github.com/sirskunkalot/PlanBuild__
