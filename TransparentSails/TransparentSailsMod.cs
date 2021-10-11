@@ -19,13 +19,12 @@ namespace TransparentSails
 {
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     [BepInDependency(Jotunn.Main.ModGuid)]
-    [BepInDependency("BepIn.Sarcen.ValheimRAFT", BepInDependency.DependencyFlags.SoftDependency)]
-    //[NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
+    [BepInDependency("BepIn.Sarcen.ValheimRAFT", BepInDependency.DependencyFlags.SoftDependency)] 
     internal class TransparentSailsMod : BaseUnityPlugin
     {
         public const string PluginGUID = "marcopogo.TransparentSails";
         public const string PluginName = "Transparent Sails";
-        public const string PluginVersion = "1.1.1";
+        public const string PluginVersion = "1.2.0";
         public ConfigEntry<int> nexusID;
         private static ManualLogSource logger;
 

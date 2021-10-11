@@ -9,7 +9,7 @@ namespace TransparentSails
         [HarmonyPostfix]
         private static void Ship_UpdateSailSize(Ship __instance)
         {
-            MoveableBaseShipSync mb = __instance.GetComponent<MoveableBaseShipSync>();
+            MoveableBaseShipComponent mb = __instance.GetComponent<MoveableBaseShipComponent>();
             if (!mb || !mb.m_baseRoot)
             {
                 return;
@@ -17,7 +17,7 @@ namespace TransparentSails
             for (int i = 0; i < mb.m_baseRoot.m_mastPieces.Count; i++)
             {
                 MastComponent mast = mb.m_baseRoot.m_mastPieces[i];
-                if (mast)
+                if (mast && mast.m_sailCloth && mast.m_sailObject)
                 {
                     TransparentSailsMod.UpdateSail(mast.GetInstanceID(), TransparentSailsMod.ShouldBeTransparent(__instance, mast.m_sailCloth), mast.m_sailObject);
                 }

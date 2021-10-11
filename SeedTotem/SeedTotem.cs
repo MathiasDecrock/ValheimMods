@@ -21,6 +21,8 @@ namespace SeedTotem
         private const string ZDO_restrict = "restrict";
         private const string messageSeedGenericPlural = "$message_seed_totem_seed_generic_plural";
         private const string messageSeedGenericSingular = "$message_seed_totem_seed_generic";
+        internal static ConfigEntry<KeyboardShortcut> configRadiusDecrementButton;
+        internal static ConfigEntry<KeyboardShortcut> configRadiusIncrementButton;
         private const string messageAll = "$message_seed_totem_all";
 
         internal static ConfigEntry<float> configFlareSize;
@@ -29,7 +31,7 @@ namespace SeedTotem
         internal static ConfigEntry<float> configLightIntensity;
         public static ConfigEntry<Color> configGlowColor;
         internal static ConfigEntry<bool> configShowQueue;
-        internal static ConfigEntry<float> configRadius;
+        internal static ConfigEntry<float> configDefaultRadius;
         internal static ConfigEntry<float> configDispersionTime;
         internal static ConfigEntry<float> configMargin;
         internal static ConfigEntry<int> configDispersionCount;
@@ -39,6 +41,8 @@ namespace SeedTotem
         internal static ConfigEntry<bool> configCheckBiome;
         internal static ConfigEntry<bool> configCustomRecipe;
         internal static ConfigEntry<int> configMaxSeeds;
+        internal static ConfigEntry<float> configMaxRadius;
+        internal static ConfigEntry<bool> configAdminOnlyRadius;
 
         //TODO: Keep list of previous valid plant locations, to avoid raycasting all the time
 
@@ -81,11 +85,12 @@ namespace SeedTotem
 
             m_nview.Register<string, int>("AddSeed", RPC_AddSeed);
             m_nview.Register<string>("Restrict", RPC_Restrict);
+            m_nview.Register<float>("SetRadius", RPC_SetRadius);
             InvokeRepeating("UpdateSeedTotem", 1f, 1f);
             InvokeRepeating("DisperseSeeds", 1f, configDispersionTime.Value);
 
             UpdateMaterials(false);
-            UpdateGlowColor(this);
+            UpdateVisuals();
         }
 
         private static Boolean scanningCultivator = false;
@@ -100,10 +105,10 @@ namespace SeedTotem
             var table = PieceManager.Instance.GetPieceTable("_CultivatorPieceTable");
             foreach (GameObject cultivatorRecipe in table.m_pieces)
             {
-                Plant plant = cultivatorRecipe.GetComponent<Plant>(); 
+                Plant plant = cultivatorRecipe.GetComponent<Plant>();
                 if (plant)
                 {
-                    Piece piece = cultivatorRecipe.GetComponent<Piece>(); 
+                    Piece piece = cultivatorRecipe.GetComponent<Piece>();
                     Piece.Requirement[] requirements = piece.m_resources;
                     if (requirements.Length > 1)
                     {
@@ -158,7 +163,7 @@ namespace SeedTotem
                     logger.LogWarning("Not sure who hit us? Credit the local player");
                     player = Player.m_localPlayer;
                 }
-                Collider[] array = Physics.OverlapSphere(transform.position, configRadius.Value + configMargin.Value, m_spaceMask);
+                Collider[] array = Physics.OverlapSphere(transform.position, GetRadius() + configMargin.Value, m_spaceMask);
                 for (int i = 0; i < array.Length; i++)
                 {
                     Pickable component = array[i].GetComponent<Pickable>();
@@ -170,26 +175,22 @@ namespace SeedTotem
             }
         }
 
-        internal static void CopyPrivateArea(SeedTotem seedTotem, PrivateArea privateArea)
+        internal void CopyPrivateArea(PrivateArea privateArea)
         {
-            seedTotem.m_areaMarker = privateArea.m_areaMarker;
+            m_areaMarker = privateArea.m_areaMarker;
+            m_areaMarker.gameObject.SetActive(value: false);
 
-            seedTotem.m_enabledEffect = privateArea.m_enabledEffect;
+            m_enabledEffect = privateArea.m_enabledEffect;
 
-            seedTotem.m_model = privateArea.m_model;
+            m_model = privateArea.m_model;
 
-            seedTotem.m_areaMarker.gameObject.SetActive(value: false);
-            seedTotem.m_areaMarker.m_radius = configRadius.Value;
-            seedTotem.m_areaMarker.m_nrOfSegments = 10;
-            UpdateGlowColor(seedTotem);
+            UpdateVisuals();
         }
 
-        private static Color brown = new Color(0.574f, 0.386f, 0.208f, 1f);
-
-        public static void UpdateGlowColor(SeedTotem seedTotem)
+        public void UpdateVisuals()
         {
-            logger.LogDebug("Updating color of SeedTotem at " + seedTotem.transform.position);
-            Material[] materials = seedTotem.m_model.materials;
+            logger.LogDebug("Updating color of SeedTotem at " + transform.position);
+            Material[] materials = m_model.materials;
             Color color = configGlowColor.Value;
             foreach (Material material in materials)
             {
@@ -204,30 +205,28 @@ namespace SeedTotem
             foreach (EffectList.EffectData effectData in m_disperseEffects.m_effectPrefabs)
             {
                 ParticleSystem particleSystem = effectData.m_prefab.GetComponent<ParticleSystem>();
-                ParticleSystem.MainModule psMain = particleSystem.main;
-
                 ParticleSystem.ColorOverLifetimeModule colorOverLifetime = particleSystem.colorOverLifetime;
                 Gradient gradient = new Gradient();
                 gradient.SetKeys(
-                    new GradientColorKey[] {
-                    new GradientColorKey(color, 0f),
-                    new GradientColorKey(Color.clear, 0.6f)
-                    },
-                    new GradientAlphaKey[] {
-                    new GradientAlphaKey(1f, 0f),
-                    new GradientAlphaKey(0f, 0.6f)
-                    });
+                    new GradientColorKey[] { new GradientColorKey(color, 0f), new GradientColorKey(Color.clear, 0.6f) },
+                    new GradientAlphaKey[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 0.6f) }
+                    );
                 colorOverLifetime.color = gradient;
             }
 
-            GameObject wayEffectGameObject = seedTotem.transform.Find("WayEffect").gameObject;
+            float radius = GetRadius();
+
+            m_areaMarker.m_radius = radius;
+            m_areaMarker.m_nrOfSegments = Mathf.CeilToInt(m_areaMarker.m_radius * 4);
+
+            GameObject wayEffectGameObject = transform.Find("WayEffect").gameObject;
             GameObject sparcsGameObject = wayEffectGameObject.transform.Find("sparcs").gameObject;
             ParticleSystem sparcs = sparcsGameObject.GetComponent<ParticleSystem>();
 
             ParticleSystem.ShapeModule sparcsShape = sparcs.shape;
             Vector3 sparcsScale = sparcsShape.scale;
-            sparcsScale.x = configRadius.Value;
-            sparcsScale.z = configRadius.Value;
+            sparcsScale.x = radius;
+            sparcsScale.z = radius;
             sparcsScale.y = 0.5f;
             ParticleSystem.MainModule sparcsMain = sparcs.main;
             sparcsMain.startColor = new ParticleSystem.MinMaxGradient(color, color * 0.2f);
@@ -236,7 +235,7 @@ namespace SeedTotem
             Light light = pointLightObject.GetComponent<Light>();
             light.color = configLightColor.Value;
             light.intensity = configLightIntensity.Value;
-            light.range = configRadius.Value;
+            light.range = radius;
 
             GameObject flareGameObject = wayEffectGameObject.transform.Find("flare").gameObject;
             ParticleSystem flare = flareGameObject.GetComponent<ParticleSystem>();
@@ -294,7 +293,27 @@ namespace SeedTotem
                 return "";
             }
             ShowAreaMarker();
+            if (!configAdminOnlyRadius.Value || SynchronizationManager.Instance.PlayerIsAdmin)
+            {
+                if (configRadiusIncrementButton.Value.IsDown())
+                {
+                    m_nview.InvokeRPC("SetRadius", GetRadius() + configRadiusChange.Value);
+                }
+                else if (configRadiusDecrementButton.Value.IsDown())
+                {
+                    m_nview.InvokeRPC("SetRadius", GetRadius() - configRadiusChange.Value);
+                }
+            }
             return Localization.instance.Localize(m_hoverText);
+        }
+
+        private float GetRadius()
+        {
+            if (!m_nview || !m_nview.IsValid())
+            {
+                return configDefaultRadius.Value;
+            }
+            return m_nview.GetZDO().GetFloat("radius", configDefaultRadius.Value);
         }
 
         public void ShowAreaMarker()
@@ -337,11 +356,15 @@ namespace SeedTotem
 
             sb.Append("[<color=yellow><b>$KEY_Use</b></color>] $piece_smelter_add " + seedName + "\n");
             sb.Append("[$message_seed_totem_hold <color=yellow><b>$KEY_Use</b></color>] $piece_smelter_add " + messageAll + " " + seedNamePlural + "\n");
-            sb.Append("[<color=yellow><b>1-8</b></color>] $message_seed_totem_restrict");
+            sb.Append("[<color=yellow><b>1-8</b></color>] $message_seed_totem_restrict\n");
+            if (!configAdminOnlyRadius.Value || SynchronizationManager.Instance.PlayerIsAdmin)
+            {
+                sb.Append($"[<color=yellow>{configRadiusIncrementButton.Value}</color>/<color=yellow>{configRadiusDecrementButton.Value}</color>] Change radius\n");
+            }
 
             if (configShowQueue.Value)
             {
-                sb.Append("\n\n");
+                sb.Append("\n");
                 for (int queuePosition = 0; queuePosition < GetQueueSize(); queuePosition++)
                 {
                     string queuedSeed = GetQueuedSeed(queuePosition);
@@ -469,6 +492,7 @@ namespace SeedTotem
 
         private float m_holdRepeatInterval = 1f;
         private float m_lastUseTime;
+        internal static ConfigEntry<float> configRadiusChange;
 
         public bool Interact(Humanoid user, bool hold, bool alt)
         {
@@ -647,7 +671,8 @@ namespace SeedTotem
             do
             {
                 tried++;
-                Vector3 position = transform.position + Vector3.up + Random.onUnitSphere * configRadius.Value;
+                float radius = GetRadius();
+                Vector3 position = transform.position + Vector3.up + Random.onUnitSphere * radius;
                 float groundHeight = ZoneSystem.instance.GetGroundHeight(position);
                 position.y = groundHeight;
 
@@ -772,7 +797,7 @@ namespace SeedTotem
 
             if (dispersed)
             {
-                m_disperseEffects.Create(transform.position, Quaternion.Euler(0f, Random.Range(0, 360), 0f), transform, configRadius.Value / 5f);
+                m_disperseEffects.Create(transform.position, Quaternion.Euler(0f, Random.Range(0, 360), 0f), transform, GetRadius() / 5f);
             }
         }
 
@@ -932,6 +957,19 @@ namespace SeedTotem
             m_nview.GetZDO().Set(ZDO_total, m_nview.GetZDO().GetInt(ZDO_total) + amount);
         }
 
+        private void RPC_SetRadius(long sender, float newRadius)
+        {
+            if (m_nview.IsOwner())
+            {
+                newRadius = Mathf.Clamp(newRadius, 2f, configMaxRadius.Value);
+#if DEBUG
+                Jotunn.Logger.LogInfo($"Updating radius to {newRadius}");
+#endif
+                m_nview.GetZDO().Set("radius", newRadius);
+            }
+            UpdateVisuals();
+        }
+
         private void RPC_DropSeeds(long sender)
         {
             if (m_nview.IsOwner())
@@ -989,8 +1027,8 @@ namespace SeedTotem
             logger.LogInfo("Updating settings for all SeedTotem");
             foreach (SeedTotem seedTotem in FindObjectsOfType<SeedTotem>())
             {
-                UpdateGlowColor(seedTotem);
-                seedTotem.m_areaMarker.m_radius = configRadius.Value;
+                seedTotem.UpdateVisuals();
+
                 seedTotem.CancelInvoke("DisperseSeeds");
                 seedTotem.InvokeRepeating("DisperseSeeds", 1f, configDispersionTime.Value);
             }

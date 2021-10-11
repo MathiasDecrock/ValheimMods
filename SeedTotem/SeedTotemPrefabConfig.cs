@@ -126,7 +126,7 @@ namespace SeedTotem
             if (privateArea != null)
             {
                 logger.LogDebug("Converting PrivateArea to SeedTotem");
-                SeedTotem.CopyPrivateArea(prefabSeedTotem, privateArea);
+                prefabSeedTotem.CopyPrivateArea(privateArea);
                 logger.LogDebug("Destroying redundant PrivateArea: " + privateArea);
                 Object.DestroyImmediate(privateArea);
             }
