@@ -89,9 +89,15 @@ namespace SeedTotem
             InvokeRepeating("UpdateSeedTotem", 1f, 1f);
             InvokeRepeating("DisperseSeeds", 1f, configDispersionTime.Value);
 
+            if(m_nview.IsOwner())
+            {
+                CountTotal();
+            }
+
             UpdateMaterials(false);
             UpdateVisuals();
         }
+
 
         private static Boolean scanningCultivator = false;
 
@@ -635,7 +641,15 @@ namespace SeedTotem
                 return false;
             }
 
-            string seedName = item.m_shared.m_name;
+
+
+            string seedName = GetSeedName(item);
+
+            if(seedName == null)
+            {
+                return false;
+            }
+            
             if (!seedPrefabMap.ContainsKey(seedName))
             {
                 if (GetRestrict() != "")
@@ -654,6 +668,11 @@ namespace SeedTotem
             logger.LogDebug("Restricting to " + seedName);
             m_nview.InvokeRPC("Restrict", seedName);
             return true;
+        }
+
+        private string GetSeedName(ItemDrop.ItemData item)
+        {
+            return item.m_shared.m_name;
         }
 
         public enum PlacementStatus
@@ -910,7 +929,7 @@ namespace SeedTotem
             {
                 ShiftQueueDown();
             }
-            m_nview.GetZDO().Set(ZDO_total, GetTotalSeedCount() - 1);
+            SetTotalSeedCount(GetTotalSeedCount() - 1);
         }
 
         private void ShiftQueueDown()
@@ -954,7 +973,12 @@ namespace SeedTotem
                 m_nview.GetZDO().Set(ZDO_queued, queueSize + 1);
             }
 
-            m_nview.GetZDO().Set(ZDO_total, m_nview.GetZDO().GetInt(ZDO_total) + amount);
+            SetTotalSeedCount(GetTotalSeedCount() + amount);
+        }
+
+        private void SetTotalSeedCount(int amount)
+        {
+            m_nview.GetZDO().Set(ZDO_total, amount);
         }
 
         private void RPC_SetRadius(long sender, float newRadius)
@@ -992,7 +1016,7 @@ namespace SeedTotem
             {
                 SetRestrict(restrict);
                 int queueSize = GetQueueSize();
-                int removed = 0;
+                int remaining = 0;
                 for (int i = 0; i < queueSize; i++)
                 {
                     string queuedSeed = GetQueuedSeed();
@@ -1001,15 +1025,27 @@ namespace SeedTotem
                     {
                         DropSeeds(queuedSeed, queuedAmount);
                         ShiftQueueDown();
-                        removed++;
                     }
                     else
                     {
+                        remaining += queuedAmount;
                         MoveToEndOfQueue(queuedSeed, queuedAmount, GetQueuedStatus());
                     }
                 }
+                SetTotalSeedCount(remaining);
                 logger.LogDebug("Restricted to " + restrict);
             }
+        }
+        
+        private void CountTotal()
+        {
+            int queueSize = GetQueueSize();
+            int total = 0;
+            for (int i = 0; i < queueSize; i++)
+            {
+                total += GetQueuedSeedCount();
+            }
+            SetTotalSeedCount(total);
         }
 
         private void SetRestrict(string seedName)

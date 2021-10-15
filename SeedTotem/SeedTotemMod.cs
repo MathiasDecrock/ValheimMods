@@ -19,12 +19,12 @@ namespace SeedTotem
 {
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     [BepInDependency(Jotunn.Main.ModGuid)]
-    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Major)]
+    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
     internal class SeedTotemMod : BaseUnityPlugin
     {
         public const string PluginGUID = "marcopogo.SeedTotem";
         public const string PluginName = "Seed Totem";
-        public const string PluginVersion = "2.0.0";
+        public const string PluginVersion = "3.1.0";
         public static ManualLogSource logger;
         public ConfigEntry<int> nexusID;
         private SeedTotemPrefabConfig seedTotemPrefabConfig;
