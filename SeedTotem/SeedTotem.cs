@@ -27,6 +27,10 @@ namespace SeedTotem
         private const string messageSeedGenericSingular = "$message_seed_totem_seed_generic";
         internal static ConfigEntry<KeyboardShortcut> configRadiusDecrementButton;
         internal static ConfigEntry<KeyboardShortcut> configRadiusIncrementButton;
+        internal static ConfigEntry<KeyboardShortcut> configWidthDecrementButton;
+        internal static ConfigEntry<KeyboardShortcut> configWidthIncrementButton;
+        internal static ConfigEntry<KeyboardShortcut> configLengthDecrementButton;
+        internal static ConfigEntry<KeyboardShortcut> configLengthIncrementButton;
         private const string messageAll = "$message_seed_totem_all";
 
         internal static ConfigEntry<float> configFlareSize;
@@ -93,9 +97,11 @@ namespace SeedTotem
             m_nview.Register<string, int>("AddSeed", RPC_AddSeed);
             m_nview.Register<string>("Restrict", RPC_Restrict);
             m_nview.Register<float>("SetRadius", RPC_SetRadius);
-            
+            m_nview.Register<float>("SetLength", RPC_SetLength);
+            m_nview.Register<float>("SetWidth", RPC_SetWidth);
+
             //so hacky
-            if(name.StartsWith(AutoFieldPrefabConfig.prefabName))
+            if (name.StartsWith(AutoFieldPrefabConfig.prefabName))
             {
                 m_shape = FieldShape.Rectangle;
                 m_rectangleProjector = transform.Find("AreaMarker")?.GetComponent<RectangleProjector>();
@@ -109,7 +115,7 @@ namespace SeedTotem
             {
                 m_model = transform.Find("new/default").GetComponent<MeshRenderer>();
             }
-            if(!m_areaMarker)
+            if (!m_areaMarker)
             {
                 m_areaMarker = transform.Find("AreaMarker")?.GetComponent<CircleProjector>();
             }
@@ -271,7 +277,14 @@ namespace SeedTotem
             }
             else
             {
-                //Do something to m_rectangleMarker
+                if (m_rectangleProjector)
+                {
+                    float length = GetLength();
+                    m_rectangleProjector.m_length = length;
+                    m_rectangleProjector.transform.localPosition = new Vector3(0, 0, -1f - length / 2f);
+                    m_rectangleProjector.m_width = GetWidth();
+                    m_rectangleProjector.RefreshStuff();
+                }
             }
 
             GameObject flareGameObject = m_enabledEffect.transform.Find("flare").gameObject;
@@ -332,13 +345,36 @@ namespace SeedTotem
             ShowAreaMarker();
             if (!configAdminOnlyRadius.Value || SynchronizationManager.Instance.PlayerIsAdmin)
             {
-                if (configRadiusIncrementButton.Value.IsDown())
+                switch (m_shape)
                 {
-                    m_nview.InvokeRPC("SetRadius", GetRadius() + configRadiusChange.Value);
-                }
-                else if (configRadiusDecrementButton.Value.IsDown())
-                {
-                    m_nview.InvokeRPC("SetRadius", GetRadius() - configRadiusChange.Value);
+                    case FieldShape.Circle:
+                        if (configRadiusIncrementButton.Value.IsDown())
+                        {
+                            m_nview.InvokeRPC("SetRadius", GetRadius() + configRadiusChange.Value);
+                        }
+                        else if (configRadiusDecrementButton.Value.IsDown())
+                        {
+                            m_nview.InvokeRPC("SetRadius", GetRadius() - configRadiusChange.Value);
+                        }
+                        break;
+                    case FieldShape.Rectangle:
+                        if (configLengthIncrementButton.Value.IsDown())
+                        {
+                            m_nview.InvokeRPC("SetLength", GetLength() + configRadiusChange.Value);
+                        }
+                        else if (configLengthDecrementButton.Value.IsDown())
+                        {
+                            m_nview.InvokeRPC("SetLength", GetLength() - configRadiusChange.Value);
+                        }
+                        else if (configWidthIncrementButton.Value.IsDown())
+                        {
+                            m_nview.InvokeRPC("SetWidth", GetWidth() + configRadiusChange.Value);
+                        }
+                        else if (configWidthDecrementButton.Value.IsDown())
+                        {
+                            m_nview.InvokeRPC("SetWidth", GetWidth() - configRadiusChange.Value);
+                        }
+                        break;
                 }
             }
             return Localization.instance.Localize(m_hoverText);
@@ -353,6 +389,24 @@ namespace SeedTotem
             return m_nview.GetZDO().GetFloat("radius", configDefaultRadius.Value);
         }
 
+        private float GetWidth()
+        {
+            if (!m_nview || !m_nview.IsValid())
+            {
+                return configDefaultRadius.Value;
+            }
+            return m_nview.GetZDO().GetFloat("width", configDefaultRadius.Value);
+        }
+
+        private float GetLength()
+        {
+            if (!m_nview || !m_nview.IsValid())
+            {
+                return configDefaultRadius.Value;
+            }
+            return m_nview.GetZDO().GetFloat("length", configDefaultRadius.Value);
+        }
+
         public void ShowAreaMarker()
         {
             switch (m_shape)
@@ -361,11 +415,7 @@ namespace SeedTotem
                     m_areaMarker.gameObject.SetActive(value: true);
                     break;
                 case FieldShape.Rectangle:
-                    if(!m_rectangleProjector.isRunning)
-                    {
-                        m_rectangleProjector.gameObject.SetActive(value: true);
-                        m_rectangleProjector.Start();
-                    }
+                    m_rectangleProjector.gameObject.SetActive(value: true);
                     break;
             }
             CancelInvoke("HideMarker");
@@ -380,7 +430,6 @@ namespace SeedTotem
                     m_areaMarker.gameObject.SetActive(value: false);
                     break;
                 case FieldShape.Rectangle:
-                    m_rectangleProjector.StopProjecting();
                     m_rectangleProjector.gameObject.SetActive(false);
                     break;
             }
@@ -414,7 +463,16 @@ namespace SeedTotem
             sb.Append("[<color=yellow><b>1-8</b></color>] $message_seed_totem_restrict\n");
             if (!configAdminOnlyRadius.Value || SynchronizationManager.Instance.PlayerIsAdmin)
             {
-                sb.Append($"[<color=yellow>{configRadiusIncrementButton.Value}</color>/<color=yellow>{configRadiusDecrementButton.Value}</color>] Change radius\n");
+                switch (m_shape)
+                {
+                    case FieldShape.Circle:
+                        sb.Append($"[<color=yellow>{configRadiusIncrementButton.Value}</color>/<color=yellow>{configRadiusDecrementButton.Value}</color>] Change radius\n");
+                        break;
+                    case FieldShape.Rectangle:
+                        sb.Append($"[<color=yellow>{configWidthIncrementButton.Value}</color>/<color=yellow>{configWidthDecrementButton.Value}</color>] Change width\n");
+                        sb.Append($"[<color=yellow>{configLengthIncrementButton.Value}</color>/<color=yellow>{configLengthDecrementButton.Value}</color>] Change length\n");
+                        break;
+                }
             }
 
             if (configShowQueue.Value)
@@ -739,8 +797,19 @@ namespace SeedTotem
             do
             {
                 tried++;
-                float radius = GetRadius();
-                Vector3 position = transform.position + Vector3.up + Random.onUnitSphere * radius;
+                Vector3 position;
+                switch (m_shape)
+                {
+                    default:
+                    case FieldShape.Circle:
+                        float radius = GetRadius();
+                        position = transform.position + Vector3.up + Random.onUnitSphere * radius;
+                        break;
+                    case FieldShape.Rectangle:
+                        float width = GetWidth();
+                        position = transform.TransformPoint(new Vector3(0, width * Random.Range(0,1) - width / 2, -1 - GetLength() * Random.Range(0, 1)));
+                        break; 
+                }
                 float groundHeight = ZoneSystem.instance.GetGroundHeight(position);
                 position.y = groundHeight;
 
@@ -1043,6 +1112,30 @@ namespace SeedTotem
             UpdateVisuals();
         }
 
+        private void RPC_SetWidth(long sender, float newWidth)
+        {
+            if (m_nview.IsOwner())
+            {
+                newWidth = Mathf.Clamp(newWidth, 2f, configMaxRadius.Value);
+#if DEBUG
+                Jotunn.Logger.LogInfo($"Updating width to {newWidth}");
+#endif
+                m_nview.GetZDO().Set("width", newWidth);
+            }
+            UpdateVisuals();
+        }
+        private void RPC_SetLength(long sender, float newLength)
+        {
+            if (m_nview.IsOwner())
+            {
+                newLength = Mathf.Clamp(newLength, 2f, configMaxRadius.Value);
+#if DEBUG
+                Jotunn.Logger.LogInfo($"Updating length to {newLength}");
+#endif
+                m_nview.GetZDO().Set("length", newLength);
+            }
+            UpdateVisuals();
+        }
         private void RPC_DropSeeds(long sender)
         {
             if (m_nview.IsOwner())

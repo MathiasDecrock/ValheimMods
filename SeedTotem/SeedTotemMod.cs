@@ -82,6 +82,10 @@ namespace SeedTotem
             SeedTotem.configRadiusChange = Config.Bind("Input", "Radius size change for each keypress", 1f, new ConfigDescription("How much the radius will change for each keypress"));
             SeedTotem.configRadiusIncrementButton = Config.Bind("Input", "Increment seed totem radius", new KeyboardShortcut(KeyCode.KeypadPlus));
             SeedTotem.configRadiusDecrementButton = Config.Bind("Input", "Decrement seed totem radius", new KeyboardShortcut(KeyCode.KeypadMinus));
+            SeedTotem.configWidthIncrementButton = Config.Bind("Input", "Increment seed totem width", new KeyboardShortcut(KeyCode.RightArrow));
+            SeedTotem.configWidthDecrementButton = Config.Bind("Input", "Decrement seed totem width", new KeyboardShortcut(KeyCode.LeftArrow));
+            SeedTotem.configLengthIncrementButton = Config.Bind("Input", "Increment seed totem length", new KeyboardShortcut(KeyCode.UpArrow));
+            SeedTotem.configLengthDecrementButton = Config.Bind("Input", "Decrement seed totem length", new KeyboardShortcut(KeyCode.DownArrow));
             nexusID = Config.Bind("General", "NexusID", 876, new ConfigDescription("Nexus mod ID for updates", new AcceptableValueList<int>(new int[] { 876 })));
 
             SeedTotemPrefabConfig.configLocation = Config.Bind("UI", "Build menu", PieceLocation.Hammer, "In which build menu is the Seed totem located");

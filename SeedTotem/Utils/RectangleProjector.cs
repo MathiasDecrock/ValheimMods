@@ -8,9 +8,8 @@ namespace SeedTotem.Utils
     internal class RectangleProjector : MonoBehaviour
     {
         public float cubesSpeed = 1f;
-        public float m_length = 2f;
+        public float m_length = 4f;
         public float m_width = 2f;
-        public float radius = 2f; 
 
         private static GameObject _segment;
         private static GameObject SelectionSegment
@@ -28,17 +27,15 @@ namespace SeedTotem.Utils
             }
         }
 
-        private GameObject cube;
+        private GameObject rootCube;
         private float cubesThickness = 0.15f;
         private float cubesHeight = 0.1f;
         private float cubesLength = 1f;
 
-        
-        private int cubesPerSide;
+
         private int cubesPerWidth;
         private int cubesPerLength;
         private float updatesPerSecond = 60f;
-        private float sideLength;
         private float cubesLength100;
         private float cubesWidth100;
         private float sideLengthHalved;
@@ -56,13 +53,13 @@ namespace SeedTotem.Utils
 
         public void Start()
         {
-            cube = new GameObject("cube");
+            rootCube = new GameObject("cube");
             GameObject cubeObject = Instantiate(SelectionSegment);
-            cubeObject.transform.SetParent(cube.transform);
+            cubeObject.transform.SetParent(rootCube.transform);
             cubeObject.transform.localScale = new Vector3(1f, 1f, 1f);
             cubeObject.transform.localPosition = new Vector3(0f, 0f, -0.5f);
-            cube.transform.localScale = new Vector3(cubesThickness, cubesHeight, cubesLength);
-            cube.SetActive(true);
+            rootCube.transform.localScale = new Vector3(cubesThickness, cubesHeight, cubesLength);
+            rootCube.SetActive(true);
 
             RefreshStuff();
             StartProjecting();
@@ -76,10 +73,15 @@ namespace SeedTotem.Utils
             }
             isRunning = true;
 
-            StartCoroutine(AnimateElements(parentNorth, cubesNorth));
-            StartCoroutine(AnimateElements(parentEast, cubesEast));
-            StartCoroutine(AnimateElements(parentSouth, cubesSouth));
-            StartCoroutine(AnimateElements(parentWest, cubesWest));
+            StartMarchingCubes();
+        }
+
+        private void StartMarchingCubes()
+        {
+            StartCoroutine(AnimateElements(parentNorth, cubesNorth, false));
+            StartCoroutine(AnimateElements(parentEast, cubesEast, true));
+            StartCoroutine(AnimateElements(parentSouth, cubesSouth, false));
+            StartCoroutine(AnimateElements(parentWest, cubesWest, true));
         }
 
         private void OnDisable()
@@ -100,10 +102,7 @@ namespace SeedTotem.Utils
             parentSouth = CreateElements(180, cubesSouth);
             parentWest = CreateElements(270, cubesWest);
 
-            StartCoroutine(AnimateElements(parentNorth, cubesNorth));
-            StartCoroutine(AnimateElements(parentEast, cubesEast));
-            StartCoroutine(AnimateElements(parentSouth, cubesSouth));
-            StartCoroutine(AnimateElements(parentWest, cubesWest));
+            StartMarchingCubes();
         }
 
         public void StopProjecting()
@@ -127,18 +126,17 @@ namespace SeedTotem.Utils
             cubesWest.Clear();
         }
 
-        private void RefreshStuff()
+        internal void RefreshStuff(bool force = false)
         {
-            cubesPerSide = Mathf.FloorToInt(radius);
-            cubesPerLength = Mathf.FloorToInt(m_length);
-            cubesPerWidth = Mathf.FloorToInt(m_width);
+            cubesPerLength = Mathf.FloorToInt(m_length /2 );
+            cubesPerWidth = Mathf.FloorToInt(m_width /2);
 
-            sideLength = radius * 2;
-            cubesLength100 = m_length / cubesPerSide;
+            cubesLength100 = m_length / cubesPerLength;
             cubesWidth100 = m_width / cubesPerWidth;
             sideLengthHalved = m_length / 2;
             sideWidthHalved = m_width / 2;
-            if (isRunning && cubesPerSide + 1 != cubesNorth.Count)
+            if (isRunning && 
+                (force || (cubesPerLength + 1 != cubesNorth.Count || cubesPerWidth + 1 != cubesEast.Count)))
             {
                 StopProjecting();
                 StartProjecting();
@@ -155,9 +153,11 @@ namespace SeedTotem.Utils
             cubesParent.SetParent(transform);
 
             // Spawn cubes
+            int cubesPerSide = rotation % 180 == 0 ? cubesPerLength : cubesPerWidth;
+
             for (int i = 0; i < cubesPerSide + 1; i++)
             {
-                cubes.Add(Instantiate(cube, transform.position, Quaternion.identity, cubesParent).transform);
+                cubes.Add(Instantiate(rootCube, transform.position, Quaternion.identity, cubesParent).transform);
             }
 
             // Spawn helper objects
@@ -175,18 +175,24 @@ namespace SeedTotem.Utils
             return cubesParent;
         }
 
-        private IEnumerator AnimateElements(Transform cubeParent, List<Transform> cubes)
+        private IEnumerator AnimateElements(Transform cubeParent, List<Transform> cubes, bool length)
         {
             Transform a = cubeParent.Find("Start");
             Transform b = cubeParent.Find("End");
+
+            int cubesPerSide = length ? cubesPerLength : cubesPerWidth;
+            float sideLength = length ? m_length : m_width;
+            float halfSideLength = length ? sideLengthHalved : sideWidthHalved;
+            float halfSideWidth = length ? sideWidthHalved : sideLengthHalved;
+            float cubes100 = length ? cubesLength100 : cubesWidth100;
 
             // Animation
             while (true)
             {
                 RefreshStuff(); // R
 
-                a.position = cubeParent.forward * (sideLengthHalved - cubesThickness / 2) - cubeParent.right * sideLengthHalved + cubeParent.position; // R
-                b.position = cubeParent.forward * (sideLengthHalved - cubesThickness / 2) + cubeParent.right * sideLengthHalved + cubeParent.position; // R
+                a.position = cubeParent.forward * (halfSideWidth - cubesThickness / 2) - cubeParent.right * halfSideLength + cubeParent.position; // R
+                b.position = cubeParent.forward * (halfSideWidth - cubesThickness / 2) + cubeParent.right * halfSideLength + cubeParent.position; // R
                 Vector3 dir = b.position - a.position;
 
                 for (int i = 0; i < cubes.Count; i++)
@@ -194,11 +200,8 @@ namespace SeedTotem.Utils
                     Transform cube = cubes[i];
                     cube.gameObject.SetActive(true);
 
-                    // Deterministic, baby
-                    
-
-
-                    float pos = (Time.time * cubesSpeed + (sideLength / cubesPerSide) * i) % (sideLength + cubesLength100);
+                    // Deterministic, baby 
+                    float pos = (Time.time * cubesSpeed + (sideLength / cubesPerSide) * i) % (sideLength + cubes100);
 
                     if (pos < cubesLength)                                              // Is growing
                     {
