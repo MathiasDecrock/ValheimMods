@@ -1,18 +1,22 @@
 ﻿using BepInEx.Configuration;
-using BepInEx.Logging;
 using HarmonyLib;
 using Jotunn.Managers;
+using SeedTotem.Utils;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using Logger = Jotunn.Logger;
 using Random = UnityEngine.Random;
 
 namespace SeedTotem
 {
     internal class SeedTotem : MonoBehaviour, Interactable, Hoverable
     {
-        public static ManualLogSource logger;
+        internal enum FieldShape
+        {
+            Circle, Rectangle
+        }
 
         private const string m_name = "$piece_seed_totem_name";
 
@@ -62,13 +66,16 @@ namespace SeedTotem
 
         private ZNetView m_nview;
 
-        public CircleProjector m_areaMarker;
-        public GameObject m_enabledEffect;
+        internal CircleProjector m_areaMarker;
+        internal RectangleProjector m_rectangleProjector;
+        internal GameObject m_enabledEffect;
 
-        public MeshRenderer m_model;
+        internal MeshRenderer m_model;
 
         public static EffectList m_disperseEffects = new EffectList();
         private static int m_spaceMask;
+
+        internal FieldShape m_shape = FieldShape.Circle;
 
         public void Awake()
         {
@@ -86,18 +93,37 @@ namespace SeedTotem
             m_nview.Register<string, int>("AddSeed", RPC_AddSeed);
             m_nview.Register<string>("Restrict", RPC_Restrict);
             m_nview.Register<float>("SetRadius", RPC_SetRadius);
+            
+            //so hacky
+            if(name.StartsWith(AutoFieldPrefabConfig.prefabName))
+            {
+                m_shape = FieldShape.Rectangle;
+                m_rectangleProjector = transform.Find("AreaMarker")?.GetComponent<RectangleProjector>();
+            }
+
+            if (!m_enabledEffect)
+            {
+                m_enabledEffect = transform.Find("WayEffect").gameObject;
+            }
+            if (!m_model)
+            {
+                m_model = transform.Find("new/default").GetComponent<MeshRenderer>();
+            }
+            if(!m_areaMarker)
+            {
+                m_areaMarker = transform.Find("AreaMarker")?.GetComponent<CircleProjector>();
+            }
             InvokeRepeating("UpdateSeedTotem", 1f, 1f);
             InvokeRepeating("DisperseSeeds", 1f, configDispersionTime.Value);
 
-            if(m_nview.IsOwner())
+            if (m_nview.IsOwner())
             {
                 CountTotal();
             }
 
-            UpdateMaterials(false);
+            UpdateMaterials(emission: false);
             UpdateVisuals();
         }
-
 
         private static Boolean scanningCultivator = false;
 
@@ -118,7 +144,7 @@ namespace SeedTotem
                     Piece.Requirement[] requirements = piece.m_resources;
                     if (requirements.Length > 1)
                     {
-                        logger.LogWarning("  Multiple seeds required for " + plant.m_name + "? Skipping");
+                        Logger.LogWarning("  Multiple seeds required for " + plant.m_name + "? Skipping");
                         continue;
                     }
 
@@ -126,14 +152,14 @@ namespace SeedTotem
                     ItemDrop itemData = requirement.m_resItem;
                     if (!seedPrefabMap.ContainsKey(itemData.m_itemData.m_shared.m_name))
                     {
-                        logger.LogDebug("Looking for Prefab of " + itemData.m_itemData.m_shared.m_name + " -> " + itemData.gameObject.name);
+                        Logger.LogDebug("Looking for Prefab of " + itemData.m_itemData.m_shared.m_name + " -> " + itemData.gameObject.name);
                         ItemConversion conversion = new ItemConversion
                         {
                             seedDrop = requirement.m_resItem,
                             plantPiece = piece,
                             plant = plant
                         };
-                        logger.LogDebug("Registering seed type: " + conversion);
+                        Logger.LogDebug("Registering seed type: " + conversion);
                         seedPrefabMap.Add(itemData.m_itemData.m_shared.m_name, conversion);
                     }
                 }
@@ -166,7 +192,7 @@ namespace SeedTotem
             {
                 if (player == null)
                 {
-                    logger.LogWarning("Not sure who hit us? Credit the local player");
+                    Logger.LogWarning("Not sure who hit us? Credit the local player");
                     player = Player.m_localPlayer;
                 }
                 Collider[] array = Physics.OverlapSphere(transform.position, GetRadius() + configMargin.Value, m_spaceMask);
@@ -195,7 +221,7 @@ namespace SeedTotem
 
         public void UpdateVisuals()
         {
-            logger.LogDebug("Updating color of SeedTotem at " + transform.position);
+            Logger.LogDebug("Updating color of SeedTotem at " + transform.position);
             Material[] materials = m_model.materials;
             Color color = configGlowColor.Value;
             foreach (Material material in materials)
@@ -203,7 +229,7 @@ namespace SeedTotem
                 string lookFor = "Guardstone_OdenGlow_mat";
                 if (material.name.StartsWith(lookFor))
                 {
-                    logger.LogInfo("Updating color");
+                    Logger.LogInfo("Updating color");
                     material.SetColor("_EmissionColor", color);
                 }
             }
@@ -220,30 +246,35 @@ namespace SeedTotem
                 colorOverLifetime.color = gradient;
             }
 
-            float radius = GetRadius();
+            if (m_shape == FieldShape.Circle)
+            {
+                float radius = GetRadius();
+                m_areaMarker.m_radius = radius;
+                m_areaMarker.m_nrOfSegments = Mathf.CeilToInt(m_areaMarker.m_radius * 4);
 
-            m_areaMarker.m_radius = radius;
-            m_areaMarker.m_nrOfSegments = Mathf.CeilToInt(m_areaMarker.m_radius * 4);
+                GameObject sparcsGameObject = m_enabledEffect.transform.Find("sparcs").gameObject;
+                ParticleSystem sparcs = sparcsGameObject.GetComponent<ParticleSystem>();
 
-            GameObject wayEffectGameObject = transform.Find("WayEffect").gameObject;
-            GameObject sparcsGameObject = wayEffectGameObject.transform.Find("sparcs").gameObject;
-            ParticleSystem sparcs = sparcsGameObject.GetComponent<ParticleSystem>();
+                ParticleSystem.ShapeModule sparcsShape = sparcs.shape;
+                Vector3 sparcsScale = sparcsShape.scale;
+                sparcsScale.x = radius;
+                sparcsScale.z = radius;
+                sparcsScale.y = 0.5f;
+                ParticleSystem.MainModule sparcsMain = sparcs.main;
+                sparcsMain.startColor = new ParticleSystem.MinMaxGradient(color, color * 0.2f);
 
-            ParticleSystem.ShapeModule sparcsShape = sparcs.shape;
-            Vector3 sparcsScale = sparcsShape.scale;
-            sparcsScale.x = radius;
-            sparcsScale.z = radius;
-            sparcsScale.y = 0.5f;
-            ParticleSystem.MainModule sparcsMain = sparcs.main;
-            sparcsMain.startColor = new ParticleSystem.MinMaxGradient(color, color * 0.2f);
+                GameObject pointLightObject = m_enabledEffect.transform.Find("Point light").gameObject;
+                Light light = pointLightObject.GetComponent<Light>();
+                light.color = configLightColor.Value;
+                light.intensity = configLightIntensity.Value;
+                light.range = radius;
+            }
+            else
+            {
+                //Do something to m_rectangleMarker
+            }
 
-            GameObject pointLightObject = wayEffectGameObject.transform.Find("Point light").gameObject;
-            Light light = pointLightObject.GetComponent<Light>();
-            light.color = configLightColor.Value;
-            light.intensity = configLightIntensity.Value;
-            light.range = radius;
-
-            GameObject flareGameObject = wayEffectGameObject.transform.Find("flare").gameObject;
+            GameObject flareGameObject = m_enabledEffect.transform.Find("flare").gameObject;
             ParticleSystem flare = flareGameObject.GetComponent<ParticleSystem>();
             ParticleSystem.MainModule flareMain = flare.main;
             flareMain.startColor = new ParticleSystem.MinMaxGradient(configFlareColor.Value);
@@ -262,13 +293,13 @@ namespace SeedTotem
             UpdateHoverText();
         }
 
-        private void UpdateMaterials(bool flag)
+        private void UpdateMaterials(bool emission)
         {
-            m_enabledEffect.SetActive(flag);
+            m_enabledEffect.SetActive(emission);
             Material[] materials = m_model.materials;
             foreach (Material material in materials)
             {
-                if (flag)
+                if (emission)
                 {
                     material.EnableKeyword("_EMISSION");
                 }
@@ -324,17 +355,35 @@ namespace SeedTotem
 
         public void ShowAreaMarker()
         {
-            if ((bool)m_areaMarker)
+            switch (m_shape)
             {
-                m_areaMarker.gameObject.SetActive(value: true);
-                CancelInvoke("HideMarker");
-                Invoke("HideMarker", 0.5f);
+                case FieldShape.Circle:
+                    m_areaMarker.gameObject.SetActive(value: true);
+                    break;
+                case FieldShape.Rectangle:
+                    if(!m_rectangleProjector.isRunning)
+                    {
+                        m_rectangleProjector.gameObject.SetActive(value: true);
+                        m_rectangleProjector.Start();
+                    }
+                    break;
             }
+            CancelInvoke("HideMarker");
+            Invoke("HideMarker", 0.5f);
         }
 
         public void HideMarker()
         {
-            m_areaMarker.gameObject.SetActive(value: false);
+            switch (m_shape)
+            {
+                case FieldShape.Circle:
+                    m_areaMarker.gameObject.SetActive(value: false);
+                    break;
+                case FieldShape.Rectangle:
+                    m_rectangleProjector.StopProjecting();
+                    m_rectangleProjector.gameObject.SetActive(false);
+                    break;
+            }
         }
 
         private void UpdateHoverText()
@@ -415,11 +464,11 @@ namespace SeedTotem
                 return;
             }
 
-            logger.LogDebug("Dropping instances of " + seedName);
+            Logger.LogDebug("Dropping instances of " + seedName);
 
             if (!seedPrefabMap.ContainsKey(seedName))
             {
-                logger.LogWarning("Skipping unknown key " + seedName);
+                Logger.LogWarning("Skipping unknown key " + seedName);
             }
             else
             {
@@ -428,14 +477,14 @@ namespace SeedTotem
                 GameObject seed = seedDrop.gameObject;
                 if (seed == null)
                 {
-                    logger.LogWarning("No seed found for " + seedName);
+                    Logger.LogWarning("No seed found for " + seedName);
                     return;
                 }
 
                 int remainingItems = amount;
                 int maxStackSize = seedDrop.m_itemData.m_shared.m_maxStackSize;
 
-                logger.LogDebug("Dropping " + remainingItems + " in stacks of " + maxStackSize);
+                Logger.LogDebug("Dropping " + remainingItems + " in stacks of " + maxStackSize);
 
                 do
                 {
@@ -452,7 +501,7 @@ namespace SeedTotem
 
                     remainingItems -= itemsToDrop;
 
-                    logger.LogDebug("Dropped " + itemsToDrop + ", " + remainingItems + " left to go");
+                    Logger.LogDebug("Dropped " + itemsToDrop + ", " + remainingItems + " left to go");
                 } while (remainingItems > 0);
             }
         }
@@ -476,20 +525,20 @@ namespace SeedTotem
             {
                 foreach (string seedName in seedPrefabMap.Keys)
                 {
-                    logger.LogDebug("Looking for seed " + seedName);
+                    Logger.LogDebug("Looking for seed " + seedName);
                     if (inventory.HaveItem(seedName))
                     {
-                        logger.LogDebug("Found seed!");
+                        Logger.LogDebug("Found seed!");
                         return seedName;
                     }
                 }
             }
             else
             {
-                logger.LogDebug("Looking for seed " + restrict);
+                Logger.LogDebug("Looking for seed " + restrict);
                 if (inventory.HaveItem(restrict))
                 {
-                    logger.LogDebug("Found seed!");
+                    Logger.LogDebug("Found seed!");
                     return restrict;
                 }
             }
@@ -573,7 +622,7 @@ namespace SeedTotem
                     continue;
                 }
 
-                logger.LogDebug("Looking for seed " + seedName);
+                Logger.LogDebug("Looking for seed " + seedName);
                 int amount = user.GetInventory().CountItems(seedName);
                 if (configMaxSeeds.Value > 0)
                 {
@@ -645,11 +694,11 @@ namespace SeedTotem
 
             string seedName = GetSeedName(item);
 
-            if(seedName == null)
+            if (seedName == null)
             {
                 return false;
             }
-            
+
             if (!seedPrefabMap.ContainsKey(seedName))
             {
                 if (GetRestrict() != "")
@@ -665,7 +714,7 @@ namespace SeedTotem
                 }
             }
 
-            logger.LogDebug("Restricting to " + seedName);
+            Logger.LogDebug("Restricting to " + seedName);
             m_nview.InvokeRPC("Restrict", seedName);
             return true;
         }
@@ -713,7 +762,7 @@ namespace SeedTotem
                     continue;
                 }
 
-                logger.LogDebug("Placing new plant " + conversion.plantPiece + " at " + position);
+                Logger.LogDebug("Placing new plant " + conversion.plantPiece + " at " + position);
 
                 Quaternion rotation = Quaternion.Euler(0f, Random.Range(0, 360), 0f);
                 GameObject placedPlant = Instantiate(conversion.plantPiece.gameObject, position, rotation);
@@ -726,12 +775,12 @@ namespace SeedTotem
                 }
                 else
                 {
-                    logger.LogWarning("No object returned?");
+                    Logger.LogWarning("No object returned?");
                 }
                 break;
             } while (tried <= maxRetries);
 
-            logger.LogDebug("Max retries reached, result " + result);
+            Logger.LogDebug("Max retries reached, result " + result);
 
             return result;
         }
@@ -760,7 +809,7 @@ namespace SeedTotem
                 builder.AppendLine("Position " + queuePosition + " -> " + queuedSeed + " -> " + queuedAmount + " -> " + queuedStatus);
             }
 
-            logger.LogWarning(builder.ToString());
+            Logger.LogWarning(builder.ToString());
         }
 
         internal void DisperseSeeds()
@@ -782,9 +831,9 @@ namespace SeedTotem
                 int currentCount = GetQueuedSeedCount();
                 if (!seedPrefabMap.ContainsKey(currentSeed))
                 {
-                    logger.LogWarning("Key '" + currentSeed + "' not found in seedPrefabMap");
+                    Logger.LogWarning("Key '" + currentSeed + "' not found in seedPrefabMap");
                     DumpQueueDetails();
-                    logger.LogWarning("Shifting queue to remove invalid entry");
+                    Logger.LogWarning("Shifting queue to remove invalid entry");
                     ShiftQueueDown();
                     return;
                 }
@@ -799,7 +848,7 @@ namespace SeedTotem
                 }
                 else if (status == PlacementStatus.WrongBiome)
                 {
-                    logger.LogDebug("Wrong biome deteced, moving " + currentSeed + " to end of queue");
+                    Logger.LogDebug("Wrong biome deteced, moving " + currentSeed + " to end of queue");
 
                     MoveToEndOfQueue(currentSeed, currentCount, status);
                     break;
@@ -822,13 +871,13 @@ namespace SeedTotem
 
         private void MoveToEndOfQueue(string currentSeed, int currentCount, PlacementStatus status)
         {
-            logger.LogDebug("Moving " + currentSeed + " to end of queue");
+            Logger.LogDebug("Moving " + currentSeed + " to end of queue");
             DumpQueueDetails();
 
             ShiftQueueDown();
             QueueSeed(currentSeed, currentCount, status);
 
-            logger.LogDebug("After move");
+            Logger.LogDebug("After move");
             DumpQueueDetails();
         }
 
@@ -852,7 +901,7 @@ namespace SeedTotem
 
         public void OnDestroyed()
         {
-            logger.LogInfo("SeedTotem destroyed, dropping all seeds");
+            Logger.LogInfo("SeedTotem destroyed, dropping all seeds");
 
             DropAllSeeds();
             CancelInvoke("UpdateSeedTotem");
@@ -907,19 +956,19 @@ namespace SeedTotem
 
         private void RemoveOneSeed()
         {
-            logger.LogDebug("--Removing 1 seed--");
+            Logger.LogDebug("--Removing 1 seed--");
 
             int queueSize = GetQueueSize();
             if (queueSize <= 0)
             {
-                logger.LogWarning("Tried to remove a seed when none are queued");
+                Logger.LogWarning("Tried to remove a seed when none are queued");
                 DumpQueueDetails();
                 return;
             }
 
             int currentCount = GetQueuedSeedCount();
 
-            logger.LogDebug("Current count " + currentCount);
+            Logger.LogDebug("Current count " + currentCount);
 
             if (currentCount > 1)
             {
@@ -937,7 +986,7 @@ namespace SeedTotem
             int queueSize = GetQueueSize();
             if (queueSize == 0)
             {
-                logger.LogError("Invalid ShiftQueueDown, queue is empty");
+                Logger.LogError("Invalid ShiftQueueDown, queue is empty");
                 DumpQueueDetails();
                 return;
             }
@@ -1033,12 +1082,13 @@ namespace SeedTotem
                     }
                 }
                 SetTotalSeedCount(remaining);
-                logger.LogDebug("Restricted to " + restrict);
+                Logger.LogDebug("Restricted to " + restrict);
             }
         }
-        
+
         private void CountTotal()
         {
+
             int queueSize = GetQueueSize();
             int total = 0;
             for (int i = 0; i < queueSize; i++)
@@ -1060,7 +1110,7 @@ namespace SeedTotem
 
         internal static void SettingsUpdated()
         {
-            logger.LogInfo("Updating settings for all SeedTotem");
+            Logger.LogInfo("Updating settings for all SeedTotem");
             foreach (SeedTotem seedTotem in FindObjectsOfType<SeedTotem>())
             {
                 seedTotem.UpdateVisuals();

@@ -8,12 +8,14 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using Jotunn.Configs;
 using Jotunn.Managers;
-using Jotunn.Utils;
+using Jotunn.Utils; 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using UnityEngine;
+using UnityEngine; 
 
 namespace SeedTotem
 {
@@ -24,8 +26,7 @@ namespace SeedTotem
     {
         public const string PluginGUID = "marcopogo.SeedTotem";
         public const string PluginName = "Seed Totem";
-        public const string PluginVersion = "3.1.0";
-        public static ManualLogSource logger;
+        public const string PluginVersion = "3.1.0"; 
         public ConfigEntry<int> nexusID;
         private SeedTotemPrefabConfig seedTotemPrefabConfig;
         private Harmony harmony;
@@ -36,10 +37,7 @@ namespace SeedTotem
         }
 
         public void Awake()
-        {
-            logger = Logger;
-            SeedTotemPrefabConfig.logger = logger;
-            SeedTotem.logger = logger;
+        { 
 
             harmony = new Harmony(PluginGUID);
             harmony.PatchAll();
@@ -74,17 +72,17 @@ namespace SeedTotem
             SeedTotem.configMaxSeeds = Config.Bind("Server", "Max seeds in totem (0 is no limit)", defaultValue: 0, new ConfigDescription("Maximum number of seeds in each totem, 0 is no limit", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
             //client configs
-            SeedTotem.configShowQueue = Config.Bind<bool>("UI", "Show queue", defaultValue: true, new ConfigDescription("Show the current queue on hover"));
-            SeedTotem.configGlowColor = Config.Bind<Color>("Graphical", "Glow lines color", new Color(0f, 0.8f, 0f, 1f), new ConfigDescription("Color of the glowing lines on the Seed totem"));
-            SeedTotem.configLightColor = Config.Bind<Color>("Graphical", "Glow light color", new Color(0f, 0.8f, 0f, 0.05f), new ConfigDescription("Color of the light from the Seed totem"));
-            SeedTotem.configLightIntensity = Config.Bind<float>("Graphical", "Glow light intensity", 3f, new ConfigDescription("Intensity of the light flare from the Seed totem", new AcceptableValueRange<float>(0f, 5f)));
-            SeedTotem.configFlareColor = Config.Bind<Color>("Graphical", "Glow flare color", new Color(0f, 0.8f, 0f, 0.1f), new ConfigDescription("Color of the light flare from the Seed totem"));
-            SeedTotem.configFlareSize = Config.Bind<float>("Graphical", "Glow flare size", 3f, new ConfigDescription("Size of the light flare from the Seed totem", new AcceptableValueRange<float>(0f, 5f)));
+            SeedTotem.configShowQueue = Config.Bind("UI", "Show queue", defaultValue: true, new ConfigDescription("Show the current queue on hover"));
+            SeedTotem.configGlowColor = Config.Bind("Graphical", "Glow lines color", new Color(0f, 0.8f, 0f, 1f), new ConfigDescription("Color of the glowing lines on the Seed totem"));
+            SeedTotem.configLightColor = Config.Bind("Graphical", "Glow light color", new Color(0f, 0.8f, 0f, 0.05f), new ConfigDescription("Color of the light from the Seed totem"));
+            SeedTotem.configLightIntensity = Config.Bind("Graphical", "Glow light intensity", 3f, new ConfigDescription("Intensity of the light flare from the Seed totem", new AcceptableValueRange<float>(0f, 5f)));
+            SeedTotem.configFlareColor = Config.Bind("Graphical", "Glow flare color", new Color(0f, 0.8f, 0f, 0.1f), new ConfigDescription("Color of the light flare from the Seed totem"));
+            SeedTotem.configFlareSize = Config.Bind("Graphical", "Glow flare size", 3f, new ConfigDescription("Size of the light flare from the Seed totem", new AcceptableValueRange<float>(0f, 5f)));
 
-            SeedTotem.configRadiusChange = Config.Bind<float>("Input", "Radius size change for each keypress", 1f, new ConfigDescription("How much the radius will change for each keypress"));
-            SeedTotem.configRadiusIncrementButton = Config.Bind<KeyboardShortcut>("Input", "Increment seed totem radius", new KeyboardShortcut(KeyCode.KeypadPlus));
-            SeedTotem.configRadiusDecrementButton = Config.Bind<KeyboardShortcut>("Input", "Decrement seed totem radius", new KeyboardShortcut(KeyCode.KeypadMinus));
-            nexusID = Config.Bind<int>("General", "NexusID", 876, new ConfigDescription("Nexus mod ID for updates", new AcceptableValueList<int>(new int[] { 876 })));
+            SeedTotem.configRadiusChange = Config.Bind("Input", "Radius size change for each keypress", 1f, new ConfigDescription("How much the radius will change for each keypress"));
+            SeedTotem.configRadiusIncrementButton = Config.Bind("Input", "Increment seed totem radius", new KeyboardShortcut(KeyCode.KeypadPlus));
+            SeedTotem.configRadiusDecrementButton = Config.Bind("Input", "Decrement seed totem radius", new KeyboardShortcut(KeyCode.KeypadMinus));
+            nexusID = Config.Bind("General", "NexusID", 876, new ConfigDescription("Nexus mod ID for updates", new AcceptableValueList<int>(new int[] { 876 })));
 
             SeedTotemPrefabConfig.configLocation = Config.Bind("UI", "Build menu", PieceLocation.Hammer, "In which build menu is the Seed totem located");
         }
@@ -107,6 +105,9 @@ namespace SeedTotem
 
                 var seedTotemPrefab = PrefabManager.Instance.CreateClonedPrefab(SeedTotemPrefabConfig.prefabName, "guard_stone");
                 seedTotemPrefabConfig.UpdateCopiedPrefab(seedTotemPrefab);
+
+                AutoFieldPrefabConfig autoFieldPrefabConfig = new AutoFieldPrefabConfig();
+                autoFieldPrefabConfig.UpdateCopiedPrefab();
             }
             catch (Exception ex)
             {
@@ -139,7 +140,7 @@ namespace SeedTotem
                     text = Path.Combine(Path.GetDirectoryName(assembly.Location), assetName);
                     if (!Directory.Exists(text))
                     {
-                        logger.LogWarning($"Could not find directory ({assetName}).");
+                        Jotunn.Logger.LogWarning($"Could not find directory ({assetName}).");
                         return null;
                     }
                 }
@@ -151,7 +152,7 @@ namespace SeedTotem
                 text = Path.Combine(Path.GetDirectoryName(assembly.Location), assetName);
                 if (!File.Exists(text))
                 {
-                    logger.LogWarning($"Could not find asset ({assetName}).");
+                    Jotunn.Logger.LogWarning($"Could not find asset ({assetName}).");
                     return null;
                 }
             }
@@ -159,6 +160,7 @@ namespace SeedTotem
         }
 
 #if DEBUG
+
         private void Update()
         {
             if (Input.GetKeyDown(KeyCode.F9))
@@ -166,6 +168,7 @@ namespace SeedTotem
                 Jotunn.Logger.LogInfo("Right here");
             }
         }
+
 #endif
     }
 }

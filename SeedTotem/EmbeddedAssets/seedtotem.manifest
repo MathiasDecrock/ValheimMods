@@ -1,0 +1,47 @@
+ManifestFileVersion: 0
+CRC: 2181983279
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 0268cd2f6740f8550e9b292248d2c595
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 3abfbdcfad4a01dcb86a92128abfad28
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 65
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: -2116187367, guid: fa61f7b172d4ecb429d536ad43add9c4, type: 3}
+- Class: 114
+  Script: {fileID: 2094620348, guid: fa61f7b172d4ecb429d536ad43add9c4, type: 3}
+- Class: 114
+  Script: {fileID: 895252998, guid: fa61f7b172d4ecb429d536ad43add9c4, type: 3}
+- Class: 114
+  Script: {fileID: 1521249158, guid: fa61f7b172d4ecb429d536ad43add9c4, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Icons/seed_totem_icon.png
+- Assets/Icons/auto_field_icon.png
+- Assets/Prefabs/piece_seed_totem_auto_field.prefab
+Dependencies: []

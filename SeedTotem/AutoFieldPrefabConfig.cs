@@ -1,39 +1,39 @@
 ﻿using BepInEx.Configuration;
-using BepInEx.Logging;
 using Jotunn.Configs;
 using Jotunn.Entities;
 using Jotunn.Managers;
 using Jotunn.Utils;
+using SeedTotem.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using static SeedTotem.SeedTotemMod;
-using Object = UnityEngine.Object;
 using Logger = Jotunn.Logger;
+using Object = UnityEngine.Object;
 
 namespace SeedTotem
 {
-    internal class SeedTotemPrefabConfig
+    internal class AutoFieldPrefabConfig
     {
-        
 
-        public const string prefabName = "SeedTotem";
+
+        
         private const string localizationName = "seed_totem";
         public const string ravenTopic = "$tutorial_" + localizationName + "_topic";
         public const string ravenText = "$tutorial_" + localizationName + "_text";
         public const string ravenLabel = "$tutorial_" + localizationName + "_label";
         private const string iconPath = "icons/seed_totem.png";
         public const string requirementsFile = "seed-totem-custom-requirements.json";
+        public const string prefabName = "piece_seed_totem_auto_field";
         internal static ConfigEntry<PieceLocation> configLocation;
         private PieceTable pieceTable;
         private Piece piece;
 
         private GameObject currentPiece;
 
-        public SeedTotemPrefabConfig()
+        public AutoFieldPrefabConfig()
         {
-
         }
 
         private static RequirementConfig[] LoadJsonFile(string filename)
@@ -102,68 +102,117 @@ namespace SeedTotem
         }
 
         private SeedTotem prefabSeedTotem;
-        private GameObject Prefab;
 
-        public void UpdateCopiedPrefab(GameObject Prefab)
+        public void UpdateCopiedPrefab()
         {
-            this.Prefab = Prefab;
+            AssetBundle assetBundle = AssetUtils.LoadAssetBundleFromResources("seedtotem", typeof(SeedTotemMod).Assembly);
+            GameObject autoFieldSkeleton = assetBundle.LoadAsset<GameObject>(prefabName);
+            Sprite autoFieldIcon = assetBundle.LoadAsset<Sprite>("auto_field_icon");
 
-            Piece piece = Prefab.GetComponent<Piece>();
-            piece.m_name = "$piece_seed_totem_name";
-            piece.m_description = "$piece_seed_totem_description";
-            piece.m_clipGround = true;
-            piece.m_groundPiece = true;
-            piece.m_groundOnly = true;
-            piece.m_noInWater = true;
-            foreach (GuidePoint guidePoint in Prefab.GetComponentsInChildren<GuidePoint>())
+            KitbashObject autoFieldKitbash = KitbashManager.Instance.AddKitbash(autoFieldSkeleton, new KitbashConfig
             {
-                guidePoint.m_text.m_key = localizationName;
-                guidePoint.m_text.m_topic = ravenTopic;
-                guidePoint.m_text.m_text = ravenText;
-                guidePoint.m_text.m_label = ravenLabel;
-            }
+                Layer = "piece",
+                FixReferences = true,
+                KitbashSources = new List<KitbashSourceConfig>
+                    {
+                        new KitbashSourceConfig
+                        {
+                            Name = "default",
+                            TargetParentPath = "new",
+                            SourcePrefab = "guard_stone",
+                            SourcePath = "new/default",
+                            Scale = Vector3.one * 0.6f
+                        },
+                        new KitbashSourceConfig
+                        {
+                            Name = "hopper",
+                            TargetParentPath = "new",
+                            Position = new Vector3(0.29f, 1.12f, 1.26f),
+                            Rotation = Quaternion.Euler(177.7f, -258.918f, -89.55298f),
+                            Scale = Vector3.one,
+                            SourcePrefab = "piece_spinningwheel",
+                            SourcePath = "SpinningWheel_Destruction/SpinningWheel_Destruction_SpinningWheel_Broken.016",
+                            Materials = new string[]
+                            {
+                                "SpinningWheel_mat"
+                            }
+                        },
+                        new KitbashSourceConfig
+                        {
+                            Name = "gear_left",
+                            TargetParentPath = "new/pivot_left",
+                            Position = new Vector3(-0.383f, 0.418f, -1.557f),
+                            Rotation = Quaternion.Euler(0,-90.00001f,-90.91601f ),
+                            Scale = Vector3.one * 0.68285f,
+                            SourcePrefab = "piece_artisanstation",
+                            SourcePath = "ArtisanTable_Destruction/ArtisanTable_Destruction.007_ArtisanTable.019",
+                            Materials = new string[]{
+                                "ArtisanTable_Mat",
+                                "TearChanal_mat"
+                            }
+                        },
+                        new KitbashSourceConfig
+                        {
+                            Name = "gear_right",
+                            TargetParentPath = "new/pivot_right",
+                            Position = new Vector3(-0.47695f, -0.03503004f, -1.6218f),
+                            Rotation = Quaternion.Euler(0, -90.00001f, -90.91601f),
+                            Scale = Vector3.one * 0.68285f,
+                            SourcePrefab = "piece_artisanstation",
+                            SourcePath = "ArtisanTable_Destruction/ArtisanTable_Destruction.006_ArtisanTable.018",
+                            Materials = new string[]{
+                                "ArtisanTable_Mat",
+                                "TearChanal_mat"
+                            }
+                        }
+                    }
+            });
 
-            prefabSeedTotem = Prefab.AddComponent<SeedTotem>();
-            PrivateArea privateArea = Prefab.GetComponent<PrivateArea>();
-            if (privateArea != null)
+            autoFieldKitbash.OnKitbashApplied += () =>
             {
-                Logger.LogDebug("Converting PrivateArea to SeedTotem");
-                prefabSeedTotem.CopyPrivateArea(privateArea);
-                Logger.LogDebug("Destroying redundant PrivateArea: " + privateArea);
-                Object.DestroyImmediate(privateArea);
-            }
-
-            RegisterPiece();
-        }
-
-        internal void RegisterPiece()
-        {
-            Logger.LogInfo("Registering Seed Totem Piece");
-            Texture2D iconTexture = AssetUtils.LoadTexture(SeedTotemMod.GetAssetPath(iconPath));
-            Sprite iconSprite = null;
-            if (iconTexture == null)
-            {
-                Logger.LogWarning("Icon missing, should be at " + iconPath + ", using default icon instead ");
-            }
-            else
-            {
-                iconSprite = Sprite.Create(iconTexture, new Rect(0f, 0f, iconTexture.width, iconTexture.height), Vector2.zero);
-            }
-            PieceConfig pieceConfig = new PieceConfig()
-            {
-                PieceTable = configLocation.GetSerializedValue(),
-                Description = "$piece_seed_totem_description",
-                Requirements = LoadJsonFile(SeedTotemMod.GetAssetPath("seed-totem-custom-requirements.json"))
+                SeedTotem seedTotem = autoFieldKitbash.Prefab.AddComponent<SeedTotem>();
+                seedTotem.m_shape = SeedTotem.FieldShape.Rectangle;
+                GameObject guardStone = PrefabManager.Instance.GetPrefab("guard_stone");
+                GameObject wayEffect = Object.Instantiate(guardStone.transform.Find("WayEffect").gameObject, autoFieldKitbash.Prefab.transform);
+                wayEffect.name = "WayEffect";
+                seedTotem.CopyPrivateArea(guardStone.GetComponent<PrivateArea>());
+                seedTotem.m_enabledEffect = wayEffect;
+                RectangleProjector rectangleProjector = autoFieldKitbash.Prefab.transform.Find("AreaMarker").gameObject.AddComponent<RectangleProjector>();
+                seedTotem.m_rectangleProjector = rectangleProjector;
+                RequirementConfig[] defaultRecipe = new RequirementConfig[] {
+                        new RequirementConfig()
+                        {
+                            Item = "FineWood",
+                            Amount = 15,
+                            Recover = true
+                        },
+                         new RequirementConfig()
+                        {
+                            Item = "GreydwarfEye",
+                            Amount = 10,
+                            Recover = true
+                        },
+                          new RequirementConfig()
+                        {
+                            Item = "SurtlingCore",
+                            Amount = 3,
+                            Recover = true
+                        },
+                           new RequirementConfig()
+                        {
+                            Item = "AncientSeed",
+                            Amount = 1,
+                            Recover = true
+                        }
+                    };
+                PieceManager.Instance.AddPiece(new CustomPiece(autoFieldKitbash.Prefab, true, new PieceConfig
+                {
+                    PieceTable = "Hammer",
+                    Icon = autoFieldIcon
+                }));
             };
-            if (iconSprite)
-            {
-                pieceConfig.Icon = iconSprite;
-            }
-
-            CustomPiece customPiece = new CustomPiece(Prefab, pieceConfig);
-
-            PieceManager.Instance.AddPiece(customPiece);
         }
+
 
         internal void UpdatePieceLocation()
         {

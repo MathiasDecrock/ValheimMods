@@ -326,7 +326,9 @@
     <Compile Include="SeedTotem.cs" />
     <Compile Include="SeedTotemMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="AutoFieldPrefabConfig.cs" />
     <Compile Include="SeedTotemPrefabConfig.cs" />
+    <Compile Include="Utils\RectangleProjector.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -334,6 +336,7 @@
     <None Include="Assets\Translations\English\SeedTotem.english.json" />
     <None Include="Assets\Translations\French\SeedTotem.french.json" />
     <None Include="Assets\Translations\Spanish\SeedTotem.spanish.json" />
+    <EmbeddedResource Include="EmbeddedAssets\seedtotem" />
     <None Include="packages.config" />
     <None Include="Package\README.md" />
   </ItemGroup>
