@@ -9,7 +9,6 @@ Place the totem using the Cultivator. It costs:
     1 Surtling Core
     1 Ancient Seed
 
-
 Use a seed with the item hotkeys to restrict the totem to a single type of seed. It will always make sure that newly placed plants have enough room to grow, but it won't check to make sure that everything around it still has enough room to grow; a totem is not that clever. Limiting it to one type of seed solves this issue.
 
 The green glow fades when the totem runs out of seeds, letting you know to add more.
@@ -24,8 +23,16 @@ The totem scans the Cultivator, anything that creates a Plant object is consider
 This means it will include both "Carrot" & "Carrot Seeds" for example.
 Notably this does not include the Berry Bushes from Planting Plus. These are Pickable objects instead, they skip the Plant stage, but are permanent, so it should be fine to place them yourself.
 
-Most values are configurable:
-﻿Server config (enforced by Mod Config Enforcer)
+# Advanced seed totem
+Construct a modified seed totem that plants in a rectangular area with the Artisan Table, it costs:
+
+    10 Fine Wood
+    10 Greydwarf Eyes
+    2  Surtling Core
+    1  Ancient Seed
+
+# Config
+﻿Server config
 
     Dispersion radius: Dispersion radius of the Seed Totem (default: 5)
     Dispersion time: Time (in seconds) between each dispersion (default: 10)
@@ -55,6 +62,10 @@ Graphical
     Glow flare color: Color of the light flare from the Seed totem (default: green)
     Glow flare size: Size of the light flare from the Seed totem (default: 3)
 
+Input
+
+    Keys to decrease/increase the radius/width/length of the (Advanced) Seed totem
+    
 
 Source available on GitHub: https://github.com/MathiasDecrock/ValheimMods/tree/master/SeedTotem
 All contributions are welcome!

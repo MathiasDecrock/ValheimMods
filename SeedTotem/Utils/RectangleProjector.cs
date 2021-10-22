@@ -12,6 +12,7 @@ namespace SeedTotem.Utils
         public float m_width = 2f;
 
         private static GameObject _segment;
+
         private static GameObject SelectionSegment
         {
             get
@@ -31,7 +32,6 @@ namespace SeedTotem.Utils
         private float cubesThickness = 0.15f;
         private float cubesHeight = 0.1f;
         private float cubesLength = 1f;
-
 
         private int cubesPerWidth;
         private int cubesPerLength;
@@ -128,14 +128,14 @@ namespace SeedTotem.Utils
 
         internal void RefreshStuff(bool force = false)
         {
-            cubesPerLength = Mathf.FloorToInt(m_length /2f);
+            cubesPerLength = Mathf.FloorToInt(m_length / 2f);
             cubesPerWidth = Mathf.FloorToInt(m_width / 2f);
 
-            cubesLength100 = m_length / (float) cubesPerLength;
-            cubesWidth100 = m_width / (float) cubesPerWidth;
+            cubesLength100 = m_length / cubesPerLength;
+            cubesWidth100 = m_width / cubesPerWidth;
             sideLengthHalved = m_length / 2f;
             sideWidthHalved = m_width / 2f;
-            if (isRunning && 
+            if (isRunning &&
                 (force || (cubesPerLength + 1 != cubesNorth.Count || cubesPerWidth + 1 != cubesEast.Count)))
             {
                 StopProjecting();
@@ -200,7 +200,7 @@ namespace SeedTotem.Utils
                     Transform cube = cubes[i];
                     cube.gameObject.SetActive(true);
 
-                    // Deterministic, baby 
+                    // Deterministic, baby
                     float pos = (Time.time * cubesSpeed + (sideLength / cubesPerSide) * i) % (sideLength + cubes100);
 
                     if (pos < cubesLength)                                              // Is growing

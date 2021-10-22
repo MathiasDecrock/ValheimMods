@@ -2,7 +2,6 @@
 using Jotunn.Configs;
 using Jotunn.Entities;
 using Jotunn.Managers;
-using Jotunn.Utils;
 using SeedTotem.Utils;
 using System;
 using System.Collections.Generic;
@@ -16,9 +15,6 @@ namespace SeedTotem
 {
     internal class AutoFieldPrefabConfig
     {
-
-
-        
         private const string localizationName = "seed_totem";
         public const string ravenTopic = "$tutorial_" + localizationName + "_topic";
         public const string ravenText = "$tutorial_" + localizationName + "_text";
@@ -42,22 +38,22 @@ namespace SeedTotem
                 new RequirementConfig()
                 {
                     Item = "FineWood",
-                    Amount = 5,
+                    Amount = 10,
                     Recover = true
                 },
-                 new RequirementConfig()
+                    new RequirementConfig()
                 {
                     Item = "GreydwarfEye",
-                    Amount = 5,
+                    Amount = 10,
                     Recover = true
                 },
-                  new RequirementConfig()
+                    new RequirementConfig()
                 {
                     Item = "SurtlingCore",
-                    Amount = 1,
+                    Amount = 2,
                     Recover = true
                 },
-                   new RequirementConfig()
+                    new RequirementConfig()
                 {
                     Item = "AncientSeed",
                     Amount = 1,
@@ -101,11 +97,8 @@ namespace SeedTotem
             return dictionary;
         }
 
-        private SeedTotem prefabSeedTotem;
-
-        public void UpdateCopiedPrefab()
+        public void UpdateCopiedPrefab(AssetBundle assetBundle)
         {
-            AssetBundle assetBundle = AssetUtils.LoadAssetBundleFromResources("seedtotem", typeof(SeedTotemMod).Assembly);
             GameObject autoFieldSkeleton = assetBundle.LoadAsset<GameObject>(prefabName);
             Sprite autoFieldIcon = assetBundle.LoadAsset<Sprite>("auto_field_icon");
 
@@ -175,50 +168,26 @@ namespace SeedTotem
                 GameObject guardStone = PrefabManager.Instance.GetPrefab("guard_stone");
                 GameObject wayEffect = Object.Instantiate(guardStone.transform.Find("WayEffect").gameObject, autoFieldKitbash.Prefab.transform);
                 wayEffect.name = "WayEffect";
-                seedTotem.CopyPrivateArea(guardStone.GetComponent<PrivateArea>());
+                seedTotem.m_enabledEffect = wayEffect;
+                seedTotem.m_model = seedTotem.transform.Find("new/default").GetComponent<MeshRenderer>();
+                seedTotem.UpdateVisuals();
                 seedTotem.m_enabledEffect = wayEffect;
                 RectangleProjector rectangleProjector = autoFieldKitbash.Prefab.transform.Find("AreaMarker").gameObject.AddComponent<RectangleProjector>();
                 seedTotem.m_rectangleProjector = rectangleProjector;
-                RequirementConfig[] defaultRecipe = new RequirementConfig[] {
-                        new RequirementConfig()
-                        {
-                            Item = "FineWood",
-                            Amount = 10,
-                            Recover = true
-                        },
-                         new RequirementConfig()
-                        {
-                            Item = "GreydwarfEye",
-                            Amount = 10,
-                            Recover = true
-                        },
-                          new RequirementConfig()
-                        {
-                            Item = "SurtlingCore",
-                            Amount = 2,
-                            Recover = true
-                        },
-                           new RequirementConfig()
-                        {
-                            Item = "AncientSeed",
-                            Amount = 1,
-                            Recover = true
-                        }
-                    };
+
                 PieceManager.Instance.AddPiece(new CustomPiece(autoFieldKitbash.Prefab, true, new PieceConfig
                 {
                     PieceTable = "Hammer",
                     CraftingStation = "piece_artisanstation",
-                    Requirements = defaultRecipe,
+                    Requirements = LoadJsonFile("seed-totem-auto-field-custom-requirements.json"),
                     Icon = autoFieldIcon
-                })); 
+                }));
             };
         }
 
-
         internal void UpdatePieceLocation()
         {
-            Logger.LogInfo("Moving Seed Totem to " + configLocation.Value);
+            Logger.LogDebug("Moving Seed Totem to " + configLocation.Value);
             foreach (PieceLocation location in Enum.GetValues(typeof(PieceLocation)))
             {
                 currentPiece = RemovePieceFromPieceTable(location, prefabName);
@@ -257,20 +226,6 @@ namespace SeedTotem
             return null;
         }
 
-        private GameObject GetPieceFromPieceTable(PieceLocation location, string pieceName)
-        {
-            PieceTable pieceTable = GetPieceTable(location);
-            int currentPosition = pieceTable.m_pieces.FindIndex(piece => piece.name == pieceName);
-            if (currentPosition >= 0)
-            {
-                Logger.LogInfo("Found Piece " + pieceName + " at position " + currentPosition);
-                GameObject @object = pieceTable.m_pieces[currentPosition];
-                pieceTable.m_pieces.RemoveAt(currentPosition);
-                return @object;
-            }
-            return null;
-        }
-
         private GameObject RemovePieceFromPieceTable(PieceLocation location, string pieceName)
         {
             Logger.LogDebug("Removing " + pieceName + " from " + location);
@@ -284,32 +239,6 @@ namespace SeedTotem
                 return @object;
             }
 
-            return null;
-        }
-
-        private Piece SetPieceTablePosition(string pieceTableName, string pieceName, int position)
-        {
-            Logger.LogInfo("Moving " + pieceName + " to position " + position + " in " + pieceTableName);
-            Object[] array = Resources.FindObjectsOfTypeAll(typeof(PieceTable));
-            for (int i = 0; i < array.Length; i++)
-            {
-                pieceTable = (PieceTable)array[i];
-                string name = pieceTable.gameObject.name;
-                if (pieceTableName == name)
-                {
-                    Logger.LogInfo("Found PieceTable " + pieceTableName);
-                    int currentPosition = pieceTable.m_pieces.FindIndex(piece => piece.name == pieceName);
-                    if (currentPosition >= 0)
-                    {
-                        Logger.LogInfo("Found Piece " + pieceName + " at position " + currentPosition);
-                        GameObject @object = pieceTable.m_pieces[currentPosition];
-                        pieceTable.m_pieces.RemoveAt(currentPosition);
-                        Logger.LogInfo("Moving to position " + position);
-                        pieceTable.m_pieces.Insert(position, @object);
-                        return @object.GetComponent<Piece>();
-                    }
-                }
-            }
             return null;
         }
     }

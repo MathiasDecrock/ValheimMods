@@ -6,16 +6,13 @@
 
 using BepInEx;
 using BepInEx.Configuration;
-using BepInEx.Logging;
 using HarmonyLib;
-using Jotunn.Configs;
 using Jotunn.Managers;
-using Jotunn.Utils; 
+using Jotunn.Utils;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using UnityEngine; 
+using UnityEngine;
 
 namespace SeedTotem
 {
@@ -26,7 +23,7 @@ namespace SeedTotem
     {
         public const string PluginGUID = "marcopogo.SeedTotem";
         public const string PluginName = "Seed Totem";
-        public const string PluginVersion = "4.0.0"; 
+        public const string PluginVersion = "4.0.0";
         public ConfigEntry<int> nexusID;
         private SeedTotemPrefabConfig seedTotemPrefabConfig;
         private Harmony harmony;
@@ -37,11 +34,13 @@ namespace SeedTotem
         }
 
         public void Awake()
-        { 
-
+        {
             harmony = new Harmony(PluginGUID);
             harmony.PatchAll();
+            On.WearNTear.Damage += SeedTotem.OnDamage;
+
             CreateConfiguration();
+
             PrefabManager.OnVanillaPrefabsAvailable += AddCustomPrefabs;
 
             SeedTotem.configGlowColor.SettingChanged += SettingsChanged;
@@ -103,15 +102,16 @@ namespace SeedTotem
 
         private void AddCustomPrefabs()
         {
+            AssetBundle assetBundle = AssetUtils.LoadAssetBundleFromResources("seedtotem", typeof(SeedTotemMod).Assembly);
             try
             {
                 seedTotemPrefabConfig = new SeedTotemPrefabConfig();
 
                 var seedTotemPrefab = PrefabManager.Instance.CreateClonedPrefab(SeedTotemPrefabConfig.prefabName, "guard_stone");
-                seedTotemPrefabConfig.UpdateCopiedPrefab(seedTotemPrefab);
+                seedTotemPrefabConfig.UpdateCopiedPrefab(assetBundle, seedTotemPrefab);
 
                 AutoFieldPrefabConfig autoFieldPrefabConfig = new AutoFieldPrefabConfig();
-                autoFieldPrefabConfig.UpdateCopiedPrefab();
+                autoFieldPrefabConfig.UpdateCopiedPrefab(assetBundle);
             }
             catch (Exception ex)
             {
@@ -120,6 +120,7 @@ namespace SeedTotem
             finally
             {
                 PrefabManager.OnVanillaPrefabsAvailable -= AddCustomPrefabs;
+                assetBundle?.Unload(false);
             }
         }
 

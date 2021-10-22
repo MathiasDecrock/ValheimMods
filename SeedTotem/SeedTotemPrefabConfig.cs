@@ -1,23 +1,19 @@
 ﻿using BepInEx.Configuration;
-using BepInEx.Logging;
 using Jotunn.Configs;
 using Jotunn.Entities;
 using Jotunn.Managers;
-using Jotunn.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using static SeedTotem.SeedTotemMod;
-using Object = UnityEngine.Object;
 using Logger = Jotunn.Logger;
+using Object = UnityEngine.Object;
 
 namespace SeedTotem
 {
     internal class SeedTotemPrefabConfig
     {
-        
-
         public const string prefabName = "SeedTotem";
         private const string localizationName = "seed_totem";
         public const string ravenTopic = "$tutorial_" + localizationName + "_topic";
@@ -26,14 +22,13 @@ namespace SeedTotem
         private const string iconPath = "icons/seed_totem.png";
         public const string requirementsFile = "seed-totem-custom-requirements.json";
         internal static ConfigEntry<PieceLocation> configLocation;
-        private PieceTable pieceTable;
+
         private Piece piece;
 
         private GameObject currentPiece;
 
         public SeedTotemPrefabConfig()
         {
-
         }
 
         private static RequirementConfig[] LoadJsonFile(string filename)
@@ -101,10 +96,9 @@ namespace SeedTotem
             return dictionary;
         }
 
-        private SeedTotem prefabSeedTotem;
         private GameObject Prefab;
 
-        public void UpdateCopiedPrefab(GameObject Prefab)
+        public void UpdateCopiedPrefab(AssetBundle assetBundle, GameObject Prefab)
         {
             this.Prefab = Prefab;
 
@@ -123,7 +117,7 @@ namespace SeedTotem
                 guidePoint.m_text.m_label = ravenLabel;
             }
 
-            prefabSeedTotem = Prefab.AddComponent<SeedTotem>();
+            SeedTotem prefabSeedTotem = Prefab.AddComponent<SeedTotem>();
             PrivateArea privateArea = Prefab.GetComponent<PrivateArea>();
             if (privateArea != null)
             {
@@ -133,36 +127,20 @@ namespace SeedTotem
                 Object.DestroyImmediate(privateArea);
             }
 
-            RegisterPiece();
+            RegisterPiece(assetBundle);
         }
 
-        internal void RegisterPiece()
+        internal void RegisterPiece(AssetBundle assetBundle)
         {
             Logger.LogInfo("Registering Seed Totem Piece");
-            Texture2D iconTexture = AssetUtils.LoadTexture(SeedTotemMod.GetAssetPath(iconPath));
-            Sprite iconSprite = null;
-            if (iconTexture == null)
-            {
-                Logger.LogWarning("Icon missing, should be at " + iconPath + ", using default icon instead ");
-            }
-            else
-            {
-                iconSprite = Sprite.Create(iconTexture, new Rect(0f, 0f, iconTexture.width, iconTexture.height), Vector2.zero);
-            }
-            PieceConfig pieceConfig = new PieceConfig()
+
+            PieceManager.Instance.AddPiece(new CustomPiece(Prefab, false, new PieceConfig()
             {
                 PieceTable = configLocation.GetSerializedValue(),
+                Icon = assetBundle.LoadAsset<Sprite>("seed_totem_icon"),
                 Description = "$piece_seed_totem_description",
-                Requirements = LoadJsonFile(SeedTotemMod.GetAssetPath("seed-totem-custom-requirements.json"))
-            };
-            if (iconSprite)
-            {
-                pieceConfig.Icon = iconSprite;
-            }
-
-            CustomPiece customPiece = new CustomPiece(Prefab, false, pieceConfig);
-
-            PieceManager.Instance.AddPiece(customPiece);
+                Requirements = LoadJsonFile("seed-totem-custom-requirements.json")
+            }));
         }
 
         internal void UpdatePieceLocation()
@@ -206,20 +184,6 @@ namespace SeedTotem
             return null;
         }
 
-        private GameObject GetPieceFromPieceTable(PieceLocation location, string pieceName)
-        {
-            PieceTable pieceTable = GetPieceTable(location);
-            int currentPosition = pieceTable.m_pieces.FindIndex(piece => piece.name == pieceName);
-            if (currentPosition >= 0)
-            {
-                Logger.LogInfo("Found Piece " + pieceName + " at position " + currentPosition);
-                GameObject @object = pieceTable.m_pieces[currentPosition];
-                pieceTable.m_pieces.RemoveAt(currentPosition);
-                return @object;
-            }
-            return null;
-        }
-
         private GameObject RemovePieceFromPieceTable(PieceLocation location, string pieceName)
         {
             Logger.LogDebug("Removing " + pieceName + " from " + location);
@@ -233,32 +197,6 @@ namespace SeedTotem
                 return @object;
             }
 
-            return null;
-        }
-
-        private Piece SetPieceTablePosition(string pieceTableName, string pieceName, int position)
-        {
-            Logger.LogInfo("Moving " + pieceName + " to position " + position + " in " + pieceTableName);
-            Object[] array = Resources.FindObjectsOfTypeAll(typeof(PieceTable));
-            for (int i = 0; i < array.Length; i++)
-            {
-                pieceTable = (PieceTable)array[i];
-                string name = pieceTable.gameObject.name;
-                if (pieceTableName == name)
-                {
-                    Logger.LogInfo("Found PieceTable " + pieceTableName);
-                    int currentPosition = pieceTable.m_pieces.FindIndex(piece => piece.name == pieceName);
-                    if (currentPosition >= 0)
-                    {
-                        Logger.LogInfo("Found Piece " + pieceName + " at position " + currentPosition);
-                        GameObject @object = pieceTable.m_pieces[currentPosition];
-                        pieceTable.m_pieces.RemoveAt(currentPosition);
-                        Logger.LogInfo("Moving to position " + position);
-                        pieceTable.m_pieces.Insert(position, @object);
-                        return @object.GetComponent<Piece>();
-                    }
-                }
-            }
             return null;
         }
     }

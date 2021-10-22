@@ -1,5 +1,4 @@
 ﻿using BepInEx.Configuration;
-using HarmonyLib;
 using Jotunn.Managers;
 using SeedTotem.Utils;
 using System;
@@ -17,27 +16,25 @@ namespace SeedTotem
         {
             Circle, Rectangle
         }
-
-        private const string m_name = "$piece_seed_totem_name";
-
+         
         private const string ZDO_queued = "queued";
         private const string ZDO_total = "total";
         private const string ZDO_restrict = "restrict";
         private const string messageSeedGenericPlural = "$message_seed_totem_seed_generic_plural";
         private const string messageSeedGenericSingular = "$message_seed_totem_seed_generic";
+        private const string messageAll = "$message_seed_totem_all";
+
         internal static ConfigEntry<KeyboardShortcut> configRadiusDecrementButton;
         internal static ConfigEntry<KeyboardShortcut> configRadiusIncrementButton;
         internal static ConfigEntry<KeyboardShortcut> configWidthDecrementButton;
         internal static ConfigEntry<KeyboardShortcut> configWidthIncrementButton;
         internal static ConfigEntry<KeyboardShortcut> configLengthDecrementButton;
         internal static ConfigEntry<KeyboardShortcut> configLengthIncrementButton;
-        private const string messageAll = "$message_seed_totem_all";
-
         internal static ConfigEntry<float> configFlareSize;
         internal static ConfigEntry<Color> configFlareColor;
         internal static ConfigEntry<Color> configLightColor;
         internal static ConfigEntry<float> configLightIntensity;
-        public static ConfigEntry<Color> configGlowColor;
+        internal static ConfigEntry<Color> configGlowColor;
         internal static ConfigEntry<bool> configShowQueue;
         internal static ConfigEntry<float> configDefaultRadius;
         internal static ConfigEntry<float> configDispersionTime;
@@ -69,6 +66,7 @@ namespace SeedTotem
         }
 
         private ZNetView m_nview;
+        private Piece m_piece;
 
         internal CircleProjector m_areaMarker;
         internal RectangleProjector m_rectangleProjector;
@@ -93,6 +91,8 @@ namespace SeedTotem
 
             ScanCultivator();
             m_nview = GetComponent<ZNetView>();
+            m_piece = GetComponent<Piece>();
+
 
             WearNTear wearNTear = GetComponent<WearNTear>();
             wearNTear.m_onDestroyed = (Action)Delegate.Combine(wearNTear.m_onDestroyed, new Action(OnDestroyed));
@@ -108,8 +108,10 @@ namespace SeedTotem
             {
                 m_shape = FieldShape.Rectangle;
                 m_rectangleProjector = transform.Find("AreaMarker").GetComponent<RectangleProjector>();
-                m_rectangleProjector.gameObject.SetActive(false);
                 m_animator = GetComponent<Animator>();
+                m_gearLeft = transform.Find("new/pivot_left/gear_left").GetComponent<MeshRenderer>();
+                m_gearRight = transform.Find("new/pivot_right/gear_right").GetComponent<MeshRenderer>();
+               
             }
 
             if (!m_enabledEffect)
@@ -120,29 +122,34 @@ namespace SeedTotem
             {
                 m_model = transform.Find("new/default").GetComponent<MeshRenderer>();
             }
-            if (!m_gearLeft)
-            {
-                m_gearLeft = transform.Find("new/pivot_left/gear_left").GetComponent<MeshRenderer>();
-            }
-
-            if (!m_gearRight)
-            {
-                m_gearRight = transform.Find("new/pivot_right/gear_right").GetComponent<MeshRenderer>();
-            }
             if (!m_areaMarker)
             {
                 m_areaMarker = transform.Find("AreaMarker")?.GetComponent<CircleProjector>();
             }
             InvokeRepeating("UpdateSeedTotem", 1f, 1f);
             InvokeRepeating("DisperseSeeds", 1f, configDispersionTime.Value);
-
-            if (m_nview.IsOwner())
-            {
-                CountTotal();
-            }
-
-            UpdateMaterials(active: false);
+             
             UpdateVisuals();
+
+        }
+
+        public void Start()
+        {
+            if (!m_nview  || !m_nview.IsValid()) 
+            { 
+                //Ghost
+                UpdateMaterials(true);
+                ShowAreaMarker(0);
+            }
+            else
+            {
+                UpdateMaterials(false);
+                HideMarker();
+                if (m_nview.IsOwner())
+                {
+                    CountTotal();
+                }
+            }
         }
 
         private static Boolean scanningCultivator = false;
@@ -187,22 +194,15 @@ namespace SeedTotem
             scanningCultivator = false;
         }
 
-        [HarmonyPatch(typeof(WearNTear), "Damage")]
-        private class WearNTear_RPC_Damage_Patch
+        internal static void OnDamage(On.WearNTear.orig_Damage orig, WearNTear self, HitData hit)
         {
-            private static bool Prefix(WearNTear __instance, HitData hit)
+            if (hit.GetTotalDamage() > 0 && self.TryGetComponent(out SeedTotem seedTotem))
             {
-                if (hit.GetTotalDamage() > 0)
-                {
-                    SeedTotem seedTotem = __instance.GetComponent<SeedTotem>();
-                    if (seedTotem)
-                    {
-                        seedTotem.OnDamaged(hit.GetAttacker() as Player);
-                        return false;
-                    }
-                }
-
-                return true;
+                seedTotem.OnDamaged(hit.GetAttacker() as Player);
+            }
+            else
+            {
+                orig(self, hit);
             }
         }
 
@@ -259,8 +259,7 @@ namespace SeedTotem
             {
                 string lookFor = "Guardstone_OdenGlow_mat";
                 if (material.name.StartsWith(lookFor))
-                {
-                    Logger.LogInfo("Updating color");
+                { 
                     material.SetColor("_EmissionColor", color);
                 }
             }
@@ -368,7 +367,7 @@ namespace SeedTotem
 
         public string GetHoverName()
         {
-            return m_name;
+            return m_piece.m_name;
         }
 
         private string m_hoverText = "";
@@ -446,7 +445,7 @@ namespace SeedTotem
             return m_nview.GetZDO().GetFloat("length", configDefaultRadius.Value);
         }
 
-        public void ShowAreaMarker()
+        public void ShowAreaMarker(float timeout = 0.5f)
         {
             switch (m_shape)
             {
@@ -459,7 +458,10 @@ namespace SeedTotem
                     break;
             }
             CancelInvoke("HideMarker");
-            Invoke("HideMarker", 0.5f);
+            if(timeout > 0)
+            {
+                Invoke("HideMarker", timeout);
+            }
         }
 
         public void HideMarker()
@@ -507,12 +509,12 @@ namespace SeedTotem
                 switch (m_shape)
                 {
                     case FieldShape.Circle:
-                        sb.Append($"[<color=yellow>{configRadiusIncrementButton.Value}</color>/<color=yellow>{configRadiusDecrementButton.Value}</color>] Change radius\n");
+                        sb.Append($"[<color=yellow>{configRadiusIncrementButton.Value}</color>/<color=yellow>{configRadiusDecrementButton.Value}</color>] $hud_seed_totem_change_radius\n");
                         break;
 
                     case FieldShape.Rectangle:
-                        sb.Append($"[<color=yellow>{configWidthIncrementButton.Value}</color>/<color=yellow>{configWidthDecrementButton.Value}</color>] Change width\n");
-                        sb.Append($"[<color=yellow>{configLengthIncrementButton.Value}</color>/<color=yellow>{configLengthDecrementButton.Value}</color>] Change length\n");
+                        sb.Append($"[<color=yellow>{configWidthIncrementButton.Value}</color>/<color=yellow>{configWidthDecrementButton.Value}</color>] $hud_seed_totem_change_width\n");
+                        sb.Append($"[<color=yellow>{configLengthIncrementButton.Value}</color>/<color=yellow>{configLengthDecrementButton.Value}</color>] $hud_seed_totem_change_length\n");
                         break;
                 }
             }
@@ -573,7 +575,7 @@ namespace SeedTotem
             else
             {
                 ItemDrop seedDrop = seedPrefabMap[seedName].seedDrop;
-
+                    
                 GameObject seed = seedDrop.gameObject;
                 if (seed == null)
                 {
@@ -833,7 +835,7 @@ namespace SeedTotem
         private PlacementStatus TryPlacePlant(ItemConversion conversion, int maxRetries)
         {
             int tried = 0;
-            PlacementStatus result = PlacementStatus.Planting;
+            PlacementStatus result;
             do
             {
                 tried++;
@@ -877,18 +879,9 @@ namespace SeedTotem
 
                 Quaternion rotation = Quaternion.Euler(0f, Random.Range(0, 360), 0f);
                 GameObject placedPlant = Instantiate(conversion.plantPiece.gameObject, position, rotation);
-                if (placedPlant)
-                {
-                    result = PlacementStatus.Planting;
-                    conversion.plantPiece.m_placeEffect.Create(position, rotation, placedPlant.transform);
-                    RemoveOneSeed();
-                    break;
-                }
-                else
-                {
-                    Logger.LogWarning("No object returned?");
-                }
-                break;
+                conversion.plantPiece.m_placeEffect.Create(position, rotation, placedPlant.transform);
+                RemoveOneSeed();
+                return PlacementStatus.Planting;
             } while (tried <= maxRetries);
 
             Logger.LogDebug("Max retries reached, result " + result);
@@ -972,7 +965,7 @@ namespace SeedTotem
                 {
                     break;
                 }
-            };
+            }
 
             if (dispersed)
             {
@@ -982,14 +975,18 @@ namespace SeedTotem
 
         private void MoveToEndOfQueue(string currentSeed, int currentCount, PlacementStatus status)
         {
+#if DEBUG
             Logger.LogDebug("Moving " + currentSeed + " to end of queue");
             DumpQueueDetails();
+#endif
 
             ShiftQueueDown();
             QueueSeed(currentSeed, currentCount, status);
 
-            Logger.LogDebug("After move");
+#if DEBUG
+            Logger.LogDebug("After move");      
             DumpQueueDetails();
+#endif
         }
 
         private bool HasGrowSpace(Vector3 position, float m_growRadius)
@@ -1002,7 +999,7 @@ namespace SeedTotem
             for (int i = 0; i < array.Length; i++)
             {
                 Plant component = array[i].GetComponent<Plant>();
-                if (!component || (!(component == this)))
+                if (!component || (component != this))
                 {
                     return false;
                 }
@@ -1245,8 +1242,7 @@ namespace SeedTotem
         }
 
         internal static void SettingsUpdated()
-        {
-            Logger.LogInfo("Updating settings for all SeedTotem");
+        { 
             foreach (SeedTotem seedTotem in FindObjectsOfType<SeedTotem>())
             {
                 seedTotem.UpdateVisuals();
