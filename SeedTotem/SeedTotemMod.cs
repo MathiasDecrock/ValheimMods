@@ -26,7 +26,7 @@ namespace SeedTotem
     {
         public const string PluginGUID = "marcopogo.SeedTotem";
         public const string PluginName = "Seed Totem";
-        public const string PluginVersion = "3.1.0"; 
+        public const string PluginVersion = "4.0.0"; 
         public ConfigEntry<int> nexusID;
         private SeedTotemPrefabConfig seedTotemPrefabConfig;
         private Harmony harmony;
@@ -42,7 +42,7 @@ namespace SeedTotem
             harmony = new Harmony(PluginGUID);
             harmony.PatchAll();
             CreateConfiguration();
-            ItemManager.OnVanillaItemsAvailable += AddCustomPrefabs;
+            PrefabManager.OnVanillaPrefabsAvailable += AddCustomPrefabs;
 
             SeedTotem.configGlowColor.SettingChanged += SettingsChanged;
             SeedTotem.configLightColor.SettingChanged += SettingsChanged;
@@ -119,7 +119,7 @@ namespace SeedTotem
             }
             finally
             {
-                ItemManager.OnVanillaItemsAvailable -= AddCustomPrefabs;
+                PrefabManager.OnVanillaPrefabsAvailable -= AddCustomPrefabs;
             }
         }
 

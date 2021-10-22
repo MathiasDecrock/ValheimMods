@@ -8,7 +8,7 @@ namespace SeedTotem.Utils
     internal class RectangleProjector : MonoBehaviour
     {
         public float cubesSpeed = 1f;
-        public float m_length = 4f;
+        public float m_length = 2f;
         public float m_width = 2f;
 
         private static GameObject _segment;
@@ -128,13 +128,13 @@ namespace SeedTotem.Utils
 
         internal void RefreshStuff(bool force = false)
         {
-            cubesPerLength = Mathf.FloorToInt(m_length /2 );
-            cubesPerWidth = Mathf.FloorToInt(m_width /2);
+            cubesPerLength = Mathf.FloorToInt(m_length /2f);
+            cubesPerWidth = Mathf.FloorToInt(m_width / 2f);
 
-            cubesLength100 = m_length / cubesPerLength;
-            cubesWidth100 = m_width / cubesPerWidth;
-            sideLengthHalved = m_length / 2;
-            sideWidthHalved = m_width / 2;
+            cubesLength100 = m_length / (float) cubesPerLength;
+            cubesWidth100 = m_width / (float) cubesPerWidth;
+            sideLengthHalved = m_length / 2f;
+            sideWidthHalved = m_width / 2f;
             if (isRunning && 
                 (force || (cubesPerLength + 1 != cubesNorth.Count || cubesPerWidth + 1 != cubesEast.Count)))
             {

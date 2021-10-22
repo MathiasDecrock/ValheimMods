@@ -160,7 +160,7 @@ namespace SeedTotem
                 pieceConfig.Icon = iconSprite;
             }
 
-            CustomPiece customPiece = new CustomPiece(Prefab, pieceConfig);
+            CustomPiece customPiece = new CustomPiece(Prefab, false, pieceConfig);
 
             PieceManager.Instance.AddPiece(customPiece);
         }

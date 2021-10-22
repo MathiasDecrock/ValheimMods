@@ -68,7 +68,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 447444026508863136}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.39, y: 2.15, z: 0.2825}
+  m_LocalPosition: {x: 0.39, y: 1.7499, z: -0.4717}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 9131786135987827267}
@@ -184,7 +184,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3080008985077012734}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 2.381, z: 0}
+  m_LocalPosition: {x: 0, y: 0.5, z: -2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 975521620185390327}
@@ -295,6 +295,7 @@ GameObject:
   - component: {fileID: 8259627952642934980}
   - component: {fileID: 3727990961023740191}
   - component: {fileID: 1910296349113572883}
+  - component: {fileID: 7450478985868917299}
   m_Layer: 0
   m_Name: piece_seed_totem_auto_field
   m_TagString: Untagged
@@ -429,6 +430,25 @@ MonoBehaviour:
     m_effectPrefabs: []
   m_autoCreateFragments: 1
   m_fragmentRoots: []
+--- !u!95 &7450478985868917299
+Animator:
+  serializedVersion: 3
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8111806262355546055}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: a5c29ad8b958845458d39cc456ba28b0, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorControllerStateOnDisable: 0
 --- !u!1 &8733004592656363061
 GameObject:
   m_ObjectHideFlags: 0
@@ -453,7 +473,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8733004592656363061}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.486, y: 2.596, z: 0.349}
+  m_LocalPosition: {x: 0.486, y: 2.0552, z: -0.5171}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 9131786135987827267}

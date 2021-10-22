@@ -141,7 +141,7 @@ namespace SeedTotem
                         {
                             Name = "gear_left",
                             TargetParentPath = "new/pivot_left",
-                            Position = new Vector3(-0.383f, 0.418f, -1.557f),
+                            Position = new Vector3(-0.383f, 0.8181f, -0.8028001f),
                             Rotation = Quaternion.Euler(0,-90.00001f,-90.91601f ),
                             Scale = Vector3.one * 0.68285f,
                             SourcePrefab = "piece_artisanstation",
@@ -155,7 +155,7 @@ namespace SeedTotem
                         {
                             Name = "gear_right",
                             TargetParentPath = "new/pivot_right",
-                            Position = new Vector3(-0.47695f, -0.03503004f, -1.6218f),
+                            Position = new Vector3(-0.47695f, 0.5057697f,-0.7557001f),
                             Rotation = Quaternion.Euler(0, -90.00001f, -90.91601f),
                             Scale = Vector3.one * 0.68285f,
                             SourcePrefab = "piece_artisanstation",
@@ -183,7 +183,7 @@ namespace SeedTotem
                         new RequirementConfig()
                         {
                             Item = "FineWood",
-                            Amount = 15,
+                            Amount = 10,
                             Recover = true
                         },
                          new RequirementConfig()
@@ -195,7 +195,7 @@ namespace SeedTotem
                           new RequirementConfig()
                         {
                             Item = "SurtlingCore",
-                            Amount = 3,
+                            Amount = 2,
                             Recover = true
                         },
                            new RequirementConfig()
@@ -208,8 +208,10 @@ namespace SeedTotem
                 PieceManager.Instance.AddPiece(new CustomPiece(autoFieldKitbash.Prefab, true, new PieceConfig
                 {
                     PieceTable = "Hammer",
+                    CraftingStation = "piece_artisanstation",
+                    Requirements = defaultRecipe,
                     Icon = autoFieldIcon
-                }));
+                })); 
             };
         }
 

@@ -72,9 +72,12 @@ namespace SeedTotem
 
         internal CircleProjector m_areaMarker;
         internal RectangleProjector m_rectangleProjector;
+        private Animator m_animator;
         internal GameObject m_enabledEffect;
 
         internal MeshRenderer m_model;
+        internal MeshRenderer m_gearLeft;
+        internal MeshRenderer m_gearRight;
 
         public static EffectList m_disperseEffects = new EffectList();
         private static int m_spaceMask;
@@ -104,7 +107,9 @@ namespace SeedTotem
             if (name.StartsWith(AutoFieldPrefabConfig.prefabName))
             {
                 m_shape = FieldShape.Rectangle;
-                m_rectangleProjector = transform.Find("AreaMarker")?.GetComponent<RectangleProjector>();
+                m_rectangleProjector = transform.Find("AreaMarker").GetComponent<RectangleProjector>();
+                m_rectangleProjector.gameObject.SetActive(false);
+                m_animator = GetComponent<Animator>();
             }
 
             if (!m_enabledEffect)
@@ -114,6 +119,15 @@ namespace SeedTotem
             if (!m_model)
             {
                 m_model = transform.Find("new/default").GetComponent<MeshRenderer>();
+            }
+            if (!m_gearLeft)
+            {
+                m_gearLeft = transform.Find("new/pivot_left/gear_left").GetComponent<MeshRenderer>();
+            }
+
+            if (!m_gearRight)
+            {
+                m_gearRight = transform.Find("new/pivot_right/gear_right").GetComponent<MeshRenderer>();
             }
             if (!m_areaMarker)
             {
@@ -127,7 +141,7 @@ namespace SeedTotem
                 CountTotal();
             }
 
-            UpdateMaterials(emission: false);
+            UpdateMaterials(active: false);
             UpdateVisuals();
         }
 
@@ -201,7 +215,18 @@ namespace SeedTotem
                     Logger.LogWarning("Not sure who hit us? Credit the local player");
                     player = Player.m_localPlayer;
                 }
-                Collider[] array = Physics.OverlapSphere(transform.position, GetRadius() + configMargin.Value, m_spaceMask);
+                Collider[] array;
+                switch (m_shape)
+                {
+                    default:
+                    case FieldShape.Circle:
+                        array = Physics.OverlapSphere(transform.position, GetRadius() + configMargin.Value, m_spaceMask);
+                        break;
+
+                    case FieldShape.Rectangle:
+                        array = Physics.OverlapBox(transform.TransformPoint(new Vector3(0, 0, -1f - GetLength() / 2f)), new Vector3(GetWidth() / 2 + configMargin.Value, 10, GetLength() / 2 + configMargin.Value), transform.rotation, m_spaceMask);
+                        break;
+                }
                 for (int i = 0; i < array.Length; i++)
                 {
                     Pickable component = array[i].GetComponent<Pickable>();
@@ -252,27 +277,29 @@ namespace SeedTotem
                 colorOverLifetime.color = gradient;
             }
 
+            GameObject sparcsGameObject = m_enabledEffect.transform.Find("sparcs").gameObject;
+            ParticleSystem sparcs = sparcsGameObject.GetComponent<ParticleSystem>();
+
+            ParticleSystem.ShapeModule sparcsShape = sparcs.shape;
+            Vector3 sparcsScale = sparcsShape.scale;
+            sparcsScale.y = 0.5f;
+            ParticleSystem.MainModule sparcsMain = sparcs.main;
+            sparcsMain.startColor = new ParticleSystem.MinMaxGradient(color, color * 0.2f);
+
+            GameObject pointLightObject = m_enabledEffect.transform.Find("Point light").gameObject;
+            Light light = pointLightObject.GetComponent<Light>();
+            light.color = configLightColor.Value;
+            light.intensity = configLightIntensity.Value;
+
             if (m_shape == FieldShape.Circle)
             {
                 float radius = GetRadius();
                 m_areaMarker.m_radius = radius;
                 m_areaMarker.m_nrOfSegments = Mathf.CeilToInt(m_areaMarker.m_radius * 4);
 
-                GameObject sparcsGameObject = m_enabledEffect.transform.Find("sparcs").gameObject;
-                ParticleSystem sparcs = sparcsGameObject.GetComponent<ParticleSystem>();
-
-                ParticleSystem.ShapeModule sparcsShape = sparcs.shape;
-                Vector3 sparcsScale = sparcsShape.scale;
                 sparcsScale.x = radius;
                 sparcsScale.z = radius;
-                sparcsScale.y = 0.5f;
-                ParticleSystem.MainModule sparcsMain = sparcs.main;
-                sparcsMain.startColor = new ParticleSystem.MinMaxGradient(color, color * 0.2f);
 
-                GameObject pointLightObject = m_enabledEffect.transform.Find("Point light").gameObject;
-                Light light = pointLightObject.GetComponent<Light>();
-                light.color = configLightColor.Value;
-                light.intensity = configLightIntensity.Value;
                 light.range = radius;
             }
             else
@@ -283,7 +310,7 @@ namespace SeedTotem
                     m_rectangleProjector.m_length = length;
                     m_rectangleProjector.transform.localPosition = new Vector3(0, 0, -1f - length / 2f);
                     m_rectangleProjector.m_width = GetWidth();
-                    m_rectangleProjector.RefreshStuff();
+                    m_rectangleProjector.RefreshStuff(true);
                 }
             }
 
@@ -306,13 +333,24 @@ namespace SeedTotem
             UpdateHoverText();
         }
 
-        private void UpdateMaterials(bool emission)
+        private void UpdateMaterials(bool active)
         {
-            m_enabledEffect.SetActive(emission);
-            Material[] materials = m_model.materials;
+            m_enabledEffect.SetActive(active);
+
+            if (m_animator)
+            {
+                m_animator.enabled = active;
+                SetEmission(m_gearLeft.materials, active);
+                SetEmission(m_gearRight.materials, active);
+            }
+            SetEmission(m_model.materials, active);
+        }
+
+        private static void SetEmission(Material[] materials, bool active)
+        {
             foreach (Material material in materials)
             {
-                if (emission)
+                if (active)
                 {
                     material.EnableKeyword("_EMISSION");
                 }
@@ -357,6 +395,7 @@ namespace SeedTotem
                             m_nview.InvokeRPC("SetRadius", GetRadius() - configRadiusChange.Value);
                         }
                         break;
+
                     case FieldShape.Rectangle:
                         if (configLengthIncrementButton.Value.IsDown())
                         {
@@ -414,6 +453,7 @@ namespace SeedTotem
                 case FieldShape.Circle:
                     m_areaMarker.gameObject.SetActive(value: true);
                     break;
+
                 case FieldShape.Rectangle:
                     m_rectangleProjector.gameObject.SetActive(value: true);
                     break;
@@ -429,6 +469,7 @@ namespace SeedTotem
                 case FieldShape.Circle:
                     m_areaMarker.gameObject.SetActive(value: false);
                     break;
+
                 case FieldShape.Rectangle:
                     m_rectangleProjector.gameObject.SetActive(false);
                     break;
@@ -468,6 +509,7 @@ namespace SeedTotem
                     case FieldShape.Circle:
                         sb.Append($"[<color=yellow>{configRadiusIncrementButton.Value}</color>/<color=yellow>{configRadiusDecrementButton.Value}</color>] Change radius\n");
                         break;
+
                     case FieldShape.Rectangle:
                         sb.Append($"[<color=yellow>{configWidthIncrementButton.Value}</color>/<color=yellow>{configWidthDecrementButton.Value}</color>] Change width\n");
                         sb.Append($"[<color=yellow>{configLengthIncrementButton.Value}</color>/<color=yellow>{configLengthDecrementButton.Value}</color>] Change length\n");
@@ -748,8 +790,6 @@ namespace SeedTotem
                 return false;
             }
 
-
-
             string seedName = GetSeedName(item);
 
             if (seedName == null)
@@ -805,10 +845,12 @@ namespace SeedTotem
                         float radius = GetRadius();
                         position = transform.position + Vector3.up + Random.onUnitSphere * radius;
                         break;
+
                     case FieldShape.Rectangle:
                         float width = GetWidth();
-                        position = transform.TransformPoint(new Vector3(0, width * Random.Range(0,1) - width / 2, -1 - GetLength() * Random.Range(0, 1)));
-                        break; 
+                        Vector3 randomOffset = new Vector3(width * Random.Range(0f, 1f) - width / 2f, 0, -1f - GetLength() * Random.Range(0f, 1f));
+                        position = transform.TransformPoint(randomOffset);
+                        break;
                 }
                 float groundHeight = ZoneSystem.instance.GetGroundHeight(position);
                 position.y = groundHeight;
@@ -1124,6 +1166,7 @@ namespace SeedTotem
             }
             UpdateVisuals();
         }
+
         private void RPC_SetLength(long sender, float newLength)
         {
             if (m_nview.IsOwner())
@@ -1136,6 +1179,7 @@ namespace SeedTotem
             }
             UpdateVisuals();
         }
+
         private void RPC_DropSeeds(long sender)
         {
             if (m_nview.IsOwner())
@@ -1181,7 +1225,6 @@ namespace SeedTotem
 
         private void CountTotal()
         {
-
             int queueSize = GetQueueSize();
             int total = 0;
             for (int i = 0; i < queueSize; i++)
