@@ -23,7 +23,7 @@ namespace SeedTotem
     {
         public const string PluginGUID = "marcopogo.SeedTotem";
         public const string PluginName = "Seed Totem";
-        public const string PluginVersion = "4.0.0";
+        public const string PluginVersion = "4.3.0";
         public ConfigEntry<int> nexusID;
         private SeedTotemPrefabConfig seedTotemPrefabConfig;
         private Harmony harmony;
@@ -57,12 +57,12 @@ namespace SeedTotem
         private void CreateConfiguration()
         {
             //server configs
-            SeedTotem.configMaxRadius = Config.Bind("Server", "Max Dispersion Radius", defaultValue: 20f, new ConfigDescription("Max dispersion radius of the Seed Totem.", new AcceptableValueRange<float>(2f, 20f), new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            SeedTotem.configMaxRadius = Config.Bind("Server", "Max Dispersion Radius", defaultValue: 20f, new ConfigDescription("Max dispersion radius of the Seed Totem.", new AcceptableValueRange<float>(2f, 64f), new ConfigurationManagerAttributes { IsAdminOnly = true }));
             SeedTotem.configDefaultRadius = Config.Bind("Server", "Default Dispersion Radius", defaultValue: 5f, new ConfigDescription("Default dispersion radius of the Seed Totem.", new AcceptableValueRange<float>(2f, SeedTotem.configMaxRadius.Value), new ConfigurationManagerAttributes { IsAdminOnly = true }));
-            SeedTotem.configDispersionTime = Config.Bind("Server", "Dispersion time", defaultValue: 10f, new ConfigDescription("Time (in seconds) between each dispersion", new AcceptableValueRange<float>(10f, 3600f), new ConfigurationManagerAttributes { IsAdminOnly = true }));
-            SeedTotem.configMargin = Config.Bind("Server", "Space requirement margin", defaultValue: 0.1f, new ConfigDescription("Extra distance to make sure plants have enough space", new AcceptableValueRange<float>(0f, 2f), new ConfigurationManagerAttributes { IsAdminOnly = true }));
-            SeedTotem.configDispersionCount = Config.Bind("Server", "Dispersion count", defaultValue: 5, new ConfigDescription("Maximum number of plants to place when dispersing", new AcceptableValueRange<int>(1, 20), new ConfigurationManagerAttributes { IsAdminOnly = true }));
-            SeedTotem.configMaxRetries = Config.Bind("Server", "Max retries", defaultValue: 8, new ConfigDescription("Maximum number of placement tests on each dispersion", new AcceptableValueRange<int>(1, 20), new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            SeedTotem.configDispersionTime = Config.Bind("Server", "Dispersion time", defaultValue: 10f, new ConfigDescription("Time (in seconds) between each dispersion (low values can cause lag)", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            SeedTotem.configMargin = Config.Bind("Server", "Space requirement margin", defaultValue: 0.1f, new ConfigDescription("Extra distance to make sure plants have enough space", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            SeedTotem.configDispersionCount = Config.Bind("Server", "Dispersion count", defaultValue: 5, new ConfigDescription("Maximum number of plants to place when dispersing (high values can cause lag)", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            SeedTotem.configMaxRetries = Config.Bind("Server", "Max retries", defaultValue: 8, new ConfigDescription("Maximum number of placement tests on each dispersion (high values can cause lag)", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
             SeedTotem.configHarvestOnHit = Config.Bind("Server", "Harvest on hit", defaultValue: true, new ConfigDescription("Should the Seed totem send out a wave to pick all pickables in radius when hit?", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
             SeedTotem.configAdminOnlyRadius = Config.Bind("Server", "Only admin can change radius", defaultValue: true, new ConfigDescription("Should only admins be able to change the radius of individual Seed totems?", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
             SeedTotem.configCheckCultivated = Config.Bind("Server", "Check for cultivated ground", defaultValue: true, new ConfigDescription("Should the Seed totem also check for cultivated land?", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
@@ -74,9 +74,9 @@ namespace SeedTotem
             SeedTotem.configShowQueue = Config.Bind("UI", "Show queue", defaultValue: true, new ConfigDescription("Show the current queue on hover"));
             SeedTotem.configGlowColor = Config.Bind("Graphical", "Glow lines color", new Color(0f, 0.8f, 0f, 1f), new ConfigDescription("Color of the glowing lines on the Seed totem"));
             SeedTotem.configLightColor = Config.Bind("Graphical", "Glow light color", new Color(0f, 0.8f, 0f, 0.05f), new ConfigDescription("Color of the light from the Seed totem"));
-            SeedTotem.configLightIntensity = Config.Bind("Graphical", "Glow light intensity", 3f, new ConfigDescription("Intensity of the light flare from the Seed totem", new AcceptableValueRange<float>(0f, 5f)));
+            SeedTotem.configLightIntensity = Config.Bind("Graphical", "Glow light intensity", 3f, new ConfigDescription("Intensity of the light flare from the Seed totem"));
             SeedTotem.configFlareColor = Config.Bind("Graphical", "Glow flare color", new Color(0f, 0.8f, 0f, 0.1f), new ConfigDescription("Color of the light flare from the Seed totem"));
-            SeedTotem.configFlareSize = Config.Bind("Graphical", "Glow flare size", 3f, new ConfigDescription("Size of the light flare from the Seed totem", new AcceptableValueRange<float>(0f, 5f)));
+            SeedTotem.configFlareSize = Config.Bind("Graphical", "Glow flare size", 3f, new ConfigDescription("Size of the light flare from the Seed totem"));
 
             SeedTotem.configRadiusChange = Config.Bind("Input", "Radius size change for each keypress", 1f, new ConfigDescription("How much the radius will change for each keypress"));
             SeedTotem.configRadiusIncrementButton = Config.Bind("Input", "Increment seed totem radius", new KeyboardShortcut(KeyCode.KeypadPlus));
@@ -97,7 +97,7 @@ namespace SeedTotem
 
         public void OnDestroy()
         {
-            harmony?.UnpatchAll(PluginGUID);
+            harmony?.UnpatchSelf();
         }
 
         private void AddCustomPrefabs()
