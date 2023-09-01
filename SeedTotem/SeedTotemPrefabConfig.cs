@@ -19,11 +19,9 @@ namespace SeedTotem
         public const string ravenTopic = "$tutorial_" + localizationName + "_topic";
         public const string ravenText = "$tutorial_" + localizationName + "_text";
         public const string ravenLabel = "$tutorial_" + localizationName + "_label";
-        private const string iconPath = "icons/seed_totem.png";
         public const string requirementsFile = "seed-totem-custom-requirements.json";
         internal static ConfigEntry<PieceLocation> configLocation;
-
-        private Piece piece;
+        internal static ConfigEntry<String> configRecipe;
 
         private GameObject currentPiece;
 
@@ -31,71 +29,24 @@ namespace SeedTotem
         {
         }
 
-        private static RequirementConfig[] LoadJsonFile(string filename)
+        private static RequirementConfig[] ParseRequirements()
         {
-            RequirementConfig[] defaultRecipe = new RequirementConfig[] {
-                new RequirementConfig()
-                {
-                    Item = "FineWood",
-                    Amount = 5,
-                    Recover = true
-                },
-                 new RequirementConfig()
-                {
-                    Item = "GreydwarfEye",
-                    Amount = 5,
-                    Recover = true
-                },
-                  new RequirementConfig()
-                {
-                    Item = "SurtlingCore",
-                    Amount = 1,
-                    Recover = true
-                },
-                   new RequirementConfig()
-                {
-                    Item = "AncientSeed",
-                    Amount = 1,
-                    Recover = true
-                }
-            };
-            if (SeedTotem.configCustomRecipe.Value)
+            string[] entries = configRecipe.Value.Split(',');
+            RequirementConfig[] result = new RequirementConfig[entries.Length];
+            int i = 0;
+            foreach (string pair in entries)
             {
-                string assetPath = SeedTotemMod.GetAssetPath(filename);
-                bool fileFound = string.IsNullOrEmpty(assetPath);
-                if (fileFound)
+                string[] components = pair.Split(':');
+                result[i++] = new RequirementConfig()
                 {
-                    Logger.LogWarning("File not found: " + filename + " using default recipe");
-                    return defaultRecipe;
-                }
-
-                Dictionary<string, int> reqDict = ReadDict(assetPath);
-                RequirementConfig[] result = new RequirementConfig[reqDict.Count];
-                int i = 0;
-                foreach (KeyValuePair<string, int> pair in reqDict)
-                {
-                    result[i++] = new RequirementConfig()
-                    {
-                        Item = pair.Key,
-                        Amount = pair.Value,
-                        Recover = true
-                    };
-                }
-                return result;
+                    Item = components[0],
+                    Amount = int.Parse(components[1]),
+                    Recover = true
+                };
             }
-            else
-            {
-                return defaultRecipe;
-            }
+            return result; 
         }
-
-        private static Dictionary<string, int> ReadDict(string assetPath)
-        {
-            string json = File.ReadAllText(assetPath);
-            Dictionary<string, int> dictionary = (Dictionary<string, int>)SimpleJson.SimpleJson.DeserializeObject(json, typeof(Dictionary<string, int>));
-            return dictionary;
-        }
-
+          
         private GameObject Prefab;
 
         public void UpdateCopiedPrefab(AssetBundle assetBundle, GameObject Prefab)
@@ -139,7 +90,7 @@ namespace SeedTotem
                 PieceTable = configLocation.GetSerializedValue(),
                 Icon = assetBundle.LoadAsset<Sprite>("seed_totem_icon"),
                 Description = "$piece_seed_totem_description",
-                Requirements = LoadJsonFile("seed-totem-custom-requirements.json")
+                Requirements = ParseRequirements()
             }));
         }
 

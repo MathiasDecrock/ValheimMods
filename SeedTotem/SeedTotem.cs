@@ -16,7 +16,14 @@ namespace SeedTotem
         {
             Circle, Rectangle
         }
-         
+
+        /*
+        internal enum InteractionMode
+        {
+            Queue, Container
+        }
+        */
+        
         private const string ZDO_queued = "queued";
         private const string ZDO_total = "total";
         private const string ZDO_restrict = "restrict";
@@ -43,8 +50,7 @@ namespace SeedTotem
         internal static ConfigEntry<int> configMaxRetries;
         internal static ConfigEntry<bool> configHarvestOnHit;
         internal static ConfigEntry<bool> configCheckCultivated;
-        internal static ConfigEntry<bool> configCheckBiome;
-        internal static ConfigEntry<bool> configCustomRecipe;
+        internal static ConfigEntry<bool> configCheckBiome; 
         internal static ConfigEntry<int> configMaxSeeds;
         internal static ConfigEntry<float> configMaxRadius;
         internal static ConfigEntry<bool> configAdminOnlyRadius;
@@ -212,14 +218,16 @@ namespace SeedTotem
             {
                 if (player == null)
                 {
+#if DEBUG
                     Logger.LogWarning("Not sure who hit us? Credit the local player");
+#endif
                     player = Player.m_localPlayer;
                 }
                 Collider[] array;
                 switch (m_shape)
                 {
-                    default:
                     case FieldShape.Circle:
+                    default:
                         array = Physics.OverlapSphere(transform.position, GetRadius() + configMargin.Value, m_spaceMask);
                         break;
 
@@ -565,9 +573,9 @@ namespace SeedTotem
             {
                 return;
             }
-
+#if DEBUG
             Logger.LogDebug("Dropping instances of " + seedName);
-
+#endif
             if (!seedPrefabMap.ContainsKey(seedName))
             {
                 Logger.LogWarning("Skipping unknown key " + seedName);
@@ -585,9 +593,9 @@ namespace SeedTotem
 
                 int remainingItems = amount;
                 int maxStackSize = seedDrop.m_itemData.m_shared.m_maxStackSize;
-
+#if DEBUG
                 Logger.LogDebug("Dropping " + remainingItems + " in stacks of " + maxStackSize);
-
+#endif
                 do
                 {
                     Vector3 position = transform.position + Vector3.up + Random.insideUnitSphere * 0.3f;
@@ -602,8 +610,9 @@ namespace SeedTotem
                     }
 
                     remainingItems -= itemsToDrop;
-
+#if DEBUG
                     Logger.LogDebug("Dropped " + itemsToDrop + ", " + remainingItems + " left to go");
+#endif
                 } while (remainingItems > 0);
             }
         }
@@ -627,20 +636,28 @@ namespace SeedTotem
             {
                 foreach (string seedName in seedPrefabMap.Keys)
                 {
+#if DEBUG
                     Logger.LogDebug("Looking for seed " + seedName);
+#endif
                     if (inventory.HaveItem(seedName))
                     {
+#if DEBUG
                         Logger.LogDebug("Found seed!");
+#endif
                         return seedName;
                     }
                 }
             }
             else
             {
+#if DEBUG
                 Logger.LogDebug("Looking for seed " + restrict);
+#endif
                 if (inventory.HaveItem(restrict))
                 {
+#if DEBUG
                     Logger.LogDebug("Found seed!");
+#endif
                     return restrict;
                 }
             }
@@ -723,8 +740,9 @@ namespace SeedTotem
                 {
                     continue;
                 }
-
+#if DEBUG
                 Logger.LogDebug("Looking for seed " + seedName);
+#endif
                 int amount = user.GetInventory().CountItems(seedName);
                 if (configMaxSeeds.Value > 0)
                 {
@@ -874,8 +892,9 @@ namespace SeedTotem
                     result = PlacementStatus.NoRoom;
                     continue;
                 }
-
+#if DEBUG
                 Logger.LogDebug("Placing new plant " + conversion.plantPiece + " at " + position);
+#endif
 
                 Quaternion rotation = Quaternion.Euler(0f, Random.Range(0, 360), 0f);
                 GameObject placedPlant = Instantiate(conversion.plantPiece.gameObject, position, rotation);
@@ -883,8 +902,9 @@ namespace SeedTotem
                 RemoveOneSeed();
                 return PlacementStatus.Planting;
             } while (tried <= maxRetries);
-
+#if DEBUG
             Logger.LogDebug("Max retries reached, result " + result);
+#endif
 
             return result;
         }
@@ -952,7 +972,9 @@ namespace SeedTotem
                 }
                 else if (status == PlacementStatus.WrongBiome)
                 {
+#if DEBUG
                     Logger.LogDebug("Wrong biome deteced, moving " + currentSeed + " to end of queue");
+#endif
 
                     MoveToEndOfQueue(currentSeed, currentCount, status);
                     break;
@@ -1064,8 +1086,9 @@ namespace SeedTotem
 
         private void RemoveOneSeed()
         {
+#if DEBUG
             Logger.LogDebug("--Removing 1 seed--");
-
+#endif
             int queueSize = GetQueueSize();
             if (queueSize <= 0)
             {
@@ -1075,9 +1098,9 @@ namespace SeedTotem
             }
 
             int currentCount = GetQueuedSeedCount();
-
+#if DEBUG
             Logger.LogDebug("Current count " + currentCount);
-
+#endif
             if (currentCount > 1)
             {
                 SetQueueSeedCount(0, currentCount - 1);

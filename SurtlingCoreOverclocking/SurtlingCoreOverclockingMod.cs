@@ -15,7 +15,7 @@ namespace SurtlingCoreOverclocking
     {
         public const string PluginGUID = "marcopogo.SurtlingCoreOverclocking";
         public const string PluginName = "Surtling Core Overclocking";
-        public const string PluginVersion = "1.2.0";
+        public const string PluginVersion = "1.3.0";
 
         private readonly Harmony harmony = new Harmony(PluginGUID);
         public static ManualLogSource logger;

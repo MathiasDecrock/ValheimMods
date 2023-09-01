@@ -171,12 +171,7 @@ namespace SeedTotem
                        Name == other.Name &&
                        Amount == other.Amount;
             }
-
-            public override bool Equals(object obj)
-            {
-                return base.Equals(obj);
-            }
-
+             
             public override int GetHashCode()
             {
                 int hashCode = 221287967;
@@ -188,6 +183,11 @@ namespace SeedTotem
             public override string ToString()
             {
                 return base.ToString();
+            }
+
+            public override bool Equals(object obj)
+            {
+                return base.Equals(obj);
             }
 
             public static bool operator ==(Entry left, Entry right)

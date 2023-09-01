@@ -1,4 +1,4 @@
-﻿Factorio-style modules for Valheim!
+Factorio-style modules for Valheim!
 Overclock your Kilns, Smelters and Blast Furnaces with Surtling Cores.
 
 The Overclock Cores are created in the forge.

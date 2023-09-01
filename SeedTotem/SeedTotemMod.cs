@@ -5,12 +5,15 @@
 // Project: SeedTotem
 
 using BepInEx;
+using BepInEx.Bootstrap;
 using BepInEx.Configuration;
 using HarmonyLib;
 using Jotunn.Managers;
 using Jotunn.Utils;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -23,10 +26,10 @@ namespace SeedTotem
     {
         public const string PluginGUID = "marcopogo.SeedTotem";
         public const string PluginName = "Seed Totem";
-        public const string PluginVersion = "4.3.0";
+        public const string PluginVersion = "4.3.2";
         public ConfigEntry<int> nexusID;
         private SeedTotemPrefabConfig seedTotemPrefabConfig;
-        private Harmony harmony;
+        private Harmony harmony; 
 
         public enum PieceLocation
         {
@@ -51,14 +54,15 @@ namespace SeedTotem
 
             SeedTotemPrefabConfig.configLocation.SettingChanged += UpdatePieceLocation;
 
-            PieceManager.OnPiecesRegistered += OnPiecesRegistered;
+            Jotunn.Managers.PieceManager.OnPiecesRegistered += OnPiecesRegistered;
         }
 
         private void CreateConfiguration()
         {
+     
             //server configs
-            SeedTotem.configMaxRadius = Config.Bind("Server", "Max Dispersion Radius", defaultValue: 20f, new ConfigDescription("Max dispersion radius of the Seed Totem.", new AcceptableValueRange<float>(2f, 64f), new ConfigurationManagerAttributes { IsAdminOnly = true }));
-            SeedTotem.configDefaultRadius = Config.Bind("Server", "Default Dispersion Radius", defaultValue: 5f, new ConfigDescription("Default dispersion radius of the Seed Totem.", new AcceptableValueRange<float>(2f, SeedTotem.configMaxRadius.Value), new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            SeedTotem.configMaxRadius = Config.Bind("Server", "Max Dispersion Radius", defaultValue: 20f, new ConfigDescription("Max dispersion radius of the Seed totem.", new AcceptableValueRange<float>(2f, 64f), new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            SeedTotem.configDefaultRadius = Config.Bind("Server", "Default Dispersion Radius", defaultValue: 5f, new ConfigDescription("Default dispersion radius of the Seed totem.", new AcceptableValueRange<float>(2f, SeedTotem.configMaxRadius.Value), new ConfigurationManagerAttributes { IsAdminOnly = true }));
             SeedTotem.configDispersionTime = Config.Bind("Server", "Dispersion time", defaultValue: 10f, new ConfigDescription("Time (in seconds) between each dispersion (low values can cause lag)", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
             SeedTotem.configMargin = Config.Bind("Server", "Space requirement margin", defaultValue: 0.1f, new ConfigDescription("Extra distance to make sure plants have enough space", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
             SeedTotem.configDispersionCount = Config.Bind("Server", "Dispersion count", defaultValue: 5, new ConfigDescription("Maximum number of plants to place when dispersing (high values can cause lag)", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
@@ -67,10 +71,11 @@ namespace SeedTotem
             SeedTotem.configAdminOnlyRadius = Config.Bind("Server", "Only admin can change radius", defaultValue: true, new ConfigDescription("Should only admins be able to change the radius of individual Seed totems?", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
             SeedTotem.configCheckCultivated = Config.Bind("Server", "Check for cultivated ground", defaultValue: true, new ConfigDescription("Should the Seed totem also check for cultivated land?", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
             SeedTotem.configCheckBiome = Config.Bind("Server", "Check for correct biome", defaultValue: true, new ConfigDescription("Should the Seed totem also check for the correct biome?", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
-            SeedTotem.configCustomRecipe = Config.Bind("Server", "Custom piece requirements", false, new ConfigDescription("Load custom piece requirements from " + SeedTotemPrefabConfig.requirementsFile + "?", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            SeedTotemPrefabConfig.configRecipe = Config.Bind("Server", "Seed totem requirements", "FineWood:5,GreydwarfEye:5,SurtlingCore:1,AncientSeed:1", new ConfigDescription("Requirements to build the Seed totem", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
+            AutoFieldPrefabConfig.configRecipe = Config.Bind("Server", "Advanced seed totem requirements", "FineWood:10,GreydwarfEye:10,SurtlingCore:2,AncientSeed:1", new ConfigDescription("Requirements to build the Advanced seed totem", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
             SeedTotem.configMaxSeeds = Config.Bind("Server", "Max seeds in totem (0 is no limit)", defaultValue: 0, new ConfigDescription("Maximum number of seeds in each totem, 0 is no limit", null, new ConfigurationManagerAttributes { IsAdminOnly = true }));
 
-            //client configs
+            //client configs 
             SeedTotem.configShowQueue = Config.Bind("UI", "Show queue", defaultValue: true, new ConfigDescription("Show the current queue on hover"));
             SeedTotem.configGlowColor = Config.Bind("Graphical", "Glow lines color", new Color(0f, 0.8f, 0f, 1f), new ConfigDescription("Color of the glowing lines on the Seed totem"));
             SeedTotem.configLightColor = Config.Bind("Graphical", "Glow light color", new Color(0f, 0.8f, 0f, 0.05f), new ConfigDescription("Color of the light from the Seed totem"));
@@ -99,7 +104,7 @@ namespace SeedTotem
         {
             harmony?.UnpatchSelf();
         }
-
+        
         private void AddCustomPrefabs()
         {
             AssetBundle assetBundle = AssetUtils.LoadAssetBundleFromResources("seedtotem", typeof(SeedTotemMod).Assembly);
@@ -165,7 +170,6 @@ namespace SeedTotem
         }
 
 #if DEBUG
-
         private void Update()
         {
             if (Input.GetKeyDown(KeyCode.F9))

@@ -1,6 +1,6 @@
-﻿Feedback & Bug reports on Nexus please: https://www.nexusmods.com/valheim/mods/876
+Feedback & Bug reports on Nexus please: https://www.nexusmods.com/valheim/mods/876
 
-The Seed Totem disperses stored seeds in an area around it.
+The Seed totem disperses stored seeds in an area around it.
 
 Place the totem using the Cultivator. It costs:
 
@@ -34,7 +34,7 @@ Construct a modified seed totem that plants in a rectangular area with the Artis
 # Config
 ﻿Server config
 
-    Dispersion radius: Dispersion radius of the Seed Totem (default: 5)
+    Dispersion radius: Dispersion radius of the Seed totem (default: 5)
     Dispersion time: Time (in seconds) between each dispersion (default: 10)
     Space requirement margin: Extra distance to make sure plants have enough space (default: 0.1)
     Max retries: Number of retries when randomly sampling possible planting locations(default: 8) (Don't increase too much, can cause lag!)
@@ -56,7 +56,7 @@ UI
 
 Graphical
 
-    Glow lines color: Color of the glowing lines on the Seed Totem (default: green)
+    Glow lines color: Color of the glowing lines on the Seed totem (default: green)
     Glow light color: Color of the light from the Seed totem (default: green)
     Glow light intensity: Intensity of the light from the Seed totem (default: 3)
     Glow flare color: Color of the light flare from the Seed totem (default: green)
